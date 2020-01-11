@@ -28,16 +28,15 @@ type SuperBlock struct {
 	dataStartAddress        Address
 }
 
-func (block SuperBlock) info() {
+func (superBlock SuperBlock) info() {
 	log.Infoln("### SUPERBLOCK INFO ###")
-	log.Infoln()
-	log.Infoln("ClusterSize:", block.clusterSize)
-	log.Infoln("ClusterCount:", block.clusterCount)
-	log.Infoln("DiskSize:", block.diskSize)
-	log.Infoln("Inode bitmap start address:", block.inodeBitmapStartAddress)
-	log.Infoln("Inode start address:", block.inodeStartAddress)
-	log.Infoln("Data bitmap start address:", block.dataBitmapStartAddress)
-	log.Infoln("Data start address:", block.dataStartAddress)
+	log.Infoln("ClusterSize:", superBlock.clusterSize)
+	log.Infoln("ClusterCount:", superBlock.clusterCount)
+	log.Infoln("DiskSize:", superBlock.diskSize)
+	log.Infoln("Inode bitmap start address:", superBlock.inodeBitmapStartAddress)
+	log.Infoln("Inode start address:", superBlock.inodeStartAddress)
+	log.Infoln("Data bitmap start address:", superBlock.dataBitmapStartAddress)
+	log.Infoln("Data start address:", superBlock.dataStartAddress)
 }
 
 type PseudoInode struct {
