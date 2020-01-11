@@ -1,9 +1,11 @@
 package myfilesystem
 
 import (
+	"encoding/binary"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"kiv_zos/utils"
+	"unsafe"
 )
 
 func (fs *MyFileSystem) FindFreeInodeID() NodeID {
@@ -33,9 +35,70 @@ func (fs *MyFileSystem) AddInode(inode PseudoInode) NodeID {
 	freeInodeID := fs.FindFreeInodeID()
 	if freeInodeID != -1 {
 		// mark in inode bitmap
+		fs.SetInBitmap(true, int32(freeInodeID), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize())
 
 		// write the actual inode at its address
+		fs.SetInodeAt(freeInodeID, inode)
+		return freeInodeID
 	}
 	log.Errorln("No free inode found")
 	return -1
+}
+
+func (fs *MyFileSystem) SetInodeAt(id NodeID, inode PseudoInode) {
+	inodeAddress := fs.GetInodeAddress(id)
+
+	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
+
+	if err == nil {
+		err = binary.Write(fs.File, binary.LittleEndian, inode)
+		if err != nil {
+			log.Error(err)
+			panic("could not binary write")
+		}
+	} else {
+		log.Error(err)
+		panic("could not seek")
+	}
+}
+
+func (fs *MyFileSystem) GetInodeAt(id NodeID) PseudoInode {
+	inodeAddress := fs.GetInodeAddress(id)
+
+	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
+
+	if err == nil {
+		inode := PseudoInode{}
+		err = binary.Read(fs.File, binary.LittleEndian, &inode)
+		if err != nil {
+			log.Error(err)
+			panic("could not binary write")
+		} else {
+			return inode
+		}
+	} else {
+		log.Error(err)
+		panic("could not seek")
+	}
+}
+
+func (fs *MyFileSystem) ClearInodeById(id NodeID) {
+	inodeAddress := fs.GetInodeAddress(id)
+
+	fs.SetInBitmap(false, int32(id), inodeAddress, fs.SuperBlock.InodeBitmapSize())
+	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
+	if err == nil {
+		_, err = fs.File.Write(make([]byte, unsafe.Sizeof(PseudoInode{})))
+		if err != nil {
+			log.Error(err)
+			panic("could write empty zeroes to clear an inode")
+		}
+	} else {
+		log.Error(err)
+		panic("could not seek")
+	}
+}
+
+func (fs *MyFileSystem) GetInodeAddress(id NodeID) Address {
+	return fs.SuperBlock.InodeStartAddress + Address(Size(id)*Size(unsafe.Sizeof(PseudoInode{})))
 }

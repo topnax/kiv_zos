@@ -44,17 +44,25 @@ func (superBlock SuperBlock) InodeCount() Size {
 	return Size(superBlock.DataBitmapStartAddress-superBlock.InodeStartAddress) / Size(unsafe.Sizeof(PseudoInode{}))
 }
 
+func (superBlock SuperBlock) InodeBitmapSize() Size {
+	return Size(superBlock.InodeStartAddress - superBlock.InodeBitmapStartAddress)
+}
+
+func (superBlock SuperBlock) DataBitmapSize() Size {
+	return Size(superBlock.DataStartAddress - superBlock.DataBitmapStartAddress)
+}
+
 type PseudoInode struct {
-	isDirectory bool
-	references  ReferenceCounter
-	fileSize    Size
-	direct1     Address
-	direct2     Address
-	direct3     Address
-	direct4     Address
-	direct5     Address
-	indirect1   NodeID
-	indirect2   NodeID
+	IsDirectory bool
+	References  ReferenceCounter
+	FileSize    Size
+	Direct1     Address
+	Direct2     Address
+	Direct3     Address
+	Direct4     Address
+	Direct5     Address
+	Indirect1   NodeID
+	Indirect2   NodeID
 }
 
 type DirectoryItem struct {
