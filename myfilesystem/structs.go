@@ -17,26 +17,26 @@ type ClusterCount int32
 type ReferenceCounter int8
 
 type SuperBlock struct {
-	signature               [signatureLength]rune
-	volumeDescriptor        [volumeDescriptor]rune
-	diskSize                Size
-	clusterSize             Size
-	clusterCount            ClusterCount
-	dataBitmapStartAddress  Address
-	inodeBitmapStartAddress Address
-	inodeStartAddress       Address
-	dataStartAddress        Address
+	Signature               [signatureLength]rune
+	VolumeDescriptor        [volumeDescriptor]rune
+	DiskSize                Size
+	ClusterSize             Size
+	ClusterCount            ClusterCount
+	DataBitmapStartAddress  Address
+	InodeBitmapStartAddress Address
+	InodeStartAddress       Address
+	DataStartAddress        Address
 }
 
 func (superBlock SuperBlock) info() {
 	log.Infoln("### SUPERBLOCK INFO ###")
-	log.Infoln("ClusterSize:", superBlock.clusterSize)
-	log.Infoln("ClusterCount:", superBlock.clusterCount)
-	log.Infoln("DiskSize:", superBlock.diskSize)
-	log.Infoln("Inode bitmap start address:", superBlock.inodeBitmapStartAddress)
-	log.Infoln("Inode start address:", superBlock.inodeStartAddress)
-	log.Infoln("Data bitmap start address:", superBlock.dataBitmapStartAddress)
-	log.Infoln("Data start address:", superBlock.dataStartAddress)
+	log.Infoln("ClusterSize:", superBlock.ClusterSize)
+	log.Infoln("ClusterCount:", superBlock.ClusterCount)
+	log.Infoln("DiskSize:", superBlock.DiskSize)
+	log.Infoln("Inode bitmap start address:", superBlock.InodeBitmapStartAddress)
+	log.Infoln("Inode start address:", superBlock.InodeStartAddress)
+	log.Infoln("Data bitmap start address:", superBlock.DataBitmapStartAddress)
+	log.Infoln("Data start address:", superBlock.DataStartAddress)
 }
 
 type PseudoInode struct {

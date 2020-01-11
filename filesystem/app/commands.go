@@ -44,8 +44,8 @@ var (
 	loadCommand = fsApp.Command("load", "Loads the given file and starts to execute the commands inside")
 	loadFile    = loadCommand.Arg("file", "File containing commands to be executed").Required().String()
 
-	formatCommand = fsApp.Command("format", "Initiates the PSEUDO fs by creating a file by the given name and formats it")
-	formatFile    = formatCommand.Arg("file", "File to be formatted used as a fs mount").Required().String()
+	formatCommand     = fsApp.Command("format", "Initiates the PSEUDO fs by creating a file by the given name and formats it")
+	formatDesiredSize = formatCommand.Arg("size", "Size of the desired filesystem. Ex: '5MB'").Required().String()
 
 	exitCommand = fsApp.Command("exit", "Exits the program :)")
 )
