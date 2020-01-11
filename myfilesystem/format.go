@@ -16,25 +16,25 @@ const (
 func (fs *MyFileSystem) Format(desiredFsSize int) {
 	log.Infof("About to format a volume of desiredFsSize %d bytes, %d kB, %d MB", desiredFsSize, desiredFsSize/1024, desiredFsSize/1024/1024)
 
-	fs.superBlock = SuperBlock{
+	fs.SuperBlock = SuperBlock{
 		Signature:        [8]rune{'k', 'r', 'a', 'l', 's', 't'},
 		VolumeDescriptor: [251]rune{'m', 'y', 'f', 's'},
 		ClusterSize:      clusterSize,
 	}
 
-	fs.superBlock.init(desiredFsSize)
+	fs.SuperBlock.init(desiredFsSize)
 
-	fs.superBlock.info()
+	fs.SuperBlock.info()
 
 	file, err := os.Create(fs.filePath)
 
 	if err == nil {
-		err := file.Truncate(int64(fs.superBlock.DiskSize))
+		err := file.Truncate(int64(fs.SuperBlock.DiskSize))
 
 		if err == nil {
 			_, err = file.Seek(0, os.SEEK_SET)
 			if err == nil {
-				err = binary.Write(file, binary.LittleEndian, fs.superBlock)
+				err = binary.Write(file, binary.LittleEndian, fs.SuperBlock)
 				if err != nil {
 					log.Errorf("Could not write SB at a file '%s'", fs.filePath)
 					log.Error(err)

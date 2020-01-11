@@ -9,7 +9,7 @@ import (
 type MyFileSystem struct {
 	filePath     string
 	file         *os.File
-	superBlock   SuperBlock
+	SuperBlock   SuperBlock
 	currentInode PseudoInode
 }
 
@@ -32,9 +32,9 @@ func (fs *MyFileSystem) Load() bool {
 			var block SuperBlock
 			err = binary.Read(file, binary.LittleEndian, &block)
 			if err == nil {
-				fs.superBlock = block
+				fs.SuperBlock = block
 				fs.file = file
-				fs.superBlock.info()
+				fs.SuperBlock.info()
 				return true
 			} else {
 				log.Errorf("Binary read of a superblock failed, probably broken superblock")
