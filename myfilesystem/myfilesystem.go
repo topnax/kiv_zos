@@ -8,19 +8,19 @@ import (
 
 type MyFileSystem struct {
 	filePath     string
-	file         *os.File
+	File         *os.File
 	SuperBlock   SuperBlock
 	currentInode PseudoInode
 }
 
 func (fs *MyFileSystem) Close() {
-	if fs.file != nil {
-		_ = fs.file.Close()
+	if fs.File != nil {
+		_ = fs.File.Close()
 	}
 }
 
 func (fs *MyFileSystem) IsLoaded() bool {
-	return fs.file != nil
+	return fs.File != nil
 }
 
 func (fs *MyFileSystem) Load() bool {
@@ -33,7 +33,7 @@ func (fs *MyFileSystem) Load() bool {
 			err = binary.Read(file, binary.LittleEndian, &block)
 			if err == nil {
 				fs.SuperBlock = block
-				fs.file = file
+				fs.File = file
 				fs.SuperBlock.info()
 				return true
 			} else {
@@ -41,12 +41,12 @@ func (fs *MyFileSystem) Load() bool {
 				log.Error(err)
 			}
 		} else {
-			log.Errorf("Could not seek at a file at '%s' at SEEK_SET of 0", fs.filePath)
+			log.Errorf("Could not seek at a File at '%s' at SEEK_SET of 0", fs.filePath)
 			log.Error(err)
 		}
 
 	} else {
-		log.Errorf("Could not find an existing filesystem in file at '%s'", fs.filePath)
+		log.Errorf("Could not find an existing filesystem in File at '%s'", fs.filePath)
 	}
 	return false
 }

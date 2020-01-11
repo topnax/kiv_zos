@@ -36,21 +36,21 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 			if err == nil {
 				err = binary.Write(file, binary.LittleEndian, fs.SuperBlock)
 				if err != nil {
-					log.Errorf("Could not write SB at a file '%s'", fs.filePath)
+					log.Errorf("Could not write SB at a File '%s'", fs.filePath)
 					log.Error(err)
 				} else {
-					fs.file = file
+					fs.File = file
 				}
 			} else {
-				log.Errorf("Could not seek at a file at '%s' at SEEK_SET of 0", fs.filePath)
+				log.Errorf("Could not seek at a File at '%s' at SEEK_SET of 0", fs.filePath)
 				log.Error(err)
 			}
 		} else {
-			log.Errorf("Could not truncate a file at '%s' of size %d kB", fs.filePath, desiredFsSize/1024)
+			log.Errorf("Could not truncate a File at '%s' of size %d kB", fs.filePath, desiredFsSize/1024)
 			log.Error(err)
 		}
 	} else {
-		log.Errorf("Could not create a file at '%s' of size %d kB", fs.filePath, desiredFsSize/1024)
+		log.Errorf("Could not create a File at '%s' of size %d kB", fs.filePath, desiredFsSize/1024)
 		log.Error(err)
 	}
 }
@@ -85,6 +85,10 @@ func (superBlock *SuperBlock) init(desiredFsSize int) {
 	log.Infoln("Desired:", desiredFsSize)
 	log.Infoln("Diff:", Size(desiredFsSize)-total)
 
+	/*
+		SUPERBLOCK | INODE BITMAP | INODES | DATA BITMAP | DATA
+	*/
+
 	superBlock.DiskSize = total
 	superBlock.ClusterCount = ClusterCount(clusterCount)
 
@@ -93,4 +97,7 @@ func (superBlock *SuperBlock) init(desiredFsSize int) {
 
 	superBlock.DataBitmapStartAddress = superBlock.InodeStartAddress + Address(inodeCount*Size(unsafe.Sizeof(PseudoInode{})))
 	superBlock.DataStartAddress = superBlock.DataBitmapStartAddress + Address(clusterCount)
+
+	log.Infoln("Calculated inode count:", superBlock.InodeCount())
+
 }

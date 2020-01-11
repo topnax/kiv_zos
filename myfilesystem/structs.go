@@ -2,6 +2,7 @@ package myfilesystem
 
 import (
 	log "github.com/sirupsen/logrus"
+	"unsafe"
 )
 
 const (
@@ -37,6 +38,10 @@ func (superBlock SuperBlock) info() {
 	log.Infoln("Inode start address:", superBlock.InodeStartAddress)
 	log.Infoln("Data bitmap start address:", superBlock.DataBitmapStartAddress)
 	log.Infoln("Data start address:", superBlock.DataStartAddress)
+}
+
+func (superBlock SuperBlock) InodeCount() Size {
+	return Size(superBlock.DataBitmapStartAddress-superBlock.InodeStartAddress) / Size(unsafe.Sizeof(PseudoInode{}))
 }
 
 type PseudoInode struct {
