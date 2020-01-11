@@ -3,6 +3,7 @@ package myfilesystem
 import (
 	"encoding/binary"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"math"
 	"os"
 	"unsafe"
@@ -32,7 +33,7 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 		err := file.Truncate(int64(fs.SuperBlock.DiskSize))
 
 		if err == nil {
-			_, err = file.Seek(0, os.SEEK_SET)
+			_, err = file.Seek(0, io.SeekStart)
 			if err == nil {
 				err = binary.Write(file, binary.LittleEndian, fs.SuperBlock)
 				if err != nil {

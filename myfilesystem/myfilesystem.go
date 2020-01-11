@@ -3,6 +3,7 @@ package myfilesystem
 import (
 	"encoding/binary"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"os"
 )
 
@@ -27,7 +28,7 @@ func (fs *MyFileSystem) Load() bool {
 	file, err := os.Open(fs.filePath)
 	log.Infof("About to load a filesystem at path of '%s'", fs.filePath)
 	if err == nil {
-		_, err = file.Seek(0, os.SEEK_SET)
+		_, err = file.Seek(0, io.SeekStart)
 		if err == nil {
 			var block SuperBlock
 			err = binary.Read(file, binary.LittleEndian, &block)

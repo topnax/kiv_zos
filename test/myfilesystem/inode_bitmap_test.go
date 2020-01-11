@@ -1,9 +1,9 @@
 package myfilesystem
 
 import (
+	"io"
 	"kiv_zos/myfilesystem"
 	"kiv_zos/utils"
-	"os"
 	"testing"
 )
 
@@ -16,7 +16,7 @@ func TestSetInBitmap(t *testing.T) {
 	fs.SetInBitmap(true, 10, fs.SuperBlock.DataBitmapStartAddress, fs.SuperBlock.ClusterSize)
 	fs.SetInBitmap(true, 20, fs.SuperBlock.DataBitmapStartAddress, fs.SuperBlock.ClusterSize)
 
-	_, _ = fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress), os.SEEK_SET)
+	_, _ = fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress), io.SeekStart)
 
 	b := make([]byte, 1)
 	_, _ = fs.File.Read(b)
@@ -25,7 +25,7 @@ func TestSetInBitmap(t *testing.T) {
 		t.Errorf("Wanted SET, got EMPTY at 0 in %b", b[0])
 	}
 
-	_, _ = fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+1, os.SEEK_SET)
+	_, _ = fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+1, io.SeekStart)
 
 	b = make([]byte, 1)
 	_, _ = fs.File.Read(b)
@@ -34,7 +34,7 @@ func TestSetInBitmap(t *testing.T) {
 		t.Errorf("Wanted SET, got EMPTY at 10 in %b", b[0])
 	}
 
-	_, _ = fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+2, os.SEEK_SET)
+	_, _ = fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+2, io.SeekStart)
 
 	b = make([]byte, 1)
 	_, _ = fs.File.Read(b)
@@ -51,13 +51,13 @@ func TestGetInBitmap(t *testing.T) {
 
 	fs.Format(1 * 1024 * 1024)
 
-	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress), os.SEEK_SET)
+	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress), io.SeekStart)
 
 	b := byte(0xA0)
 
 	fs.File.Write([]byte{b})
 
-	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+2, os.SEEK_SET)
+	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+2, io.SeekStart)
 
 	b = byte(0xD0)
 
@@ -83,7 +83,7 @@ func TestGetByteByBitInBitmap(t *testing.T) {
 
 	fs.Format(1 * 1024 * 1024)
 
-	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress), os.SEEK_SET)
+	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress), io.SeekStart)
 
 	b := byte(0xA0)
 
@@ -95,7 +95,7 @@ func TestGetByteByBitInBitmap(t *testing.T) {
 		t.Errorf("Wanted bit=4 byte=%b, got byte=%b", b, rb)
 	}
 
-	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+2, os.SEEK_SET)
+	fs.File.Seek(int64(fs.SuperBlock.DataBitmapStartAddress)+2, io.SeekStart)
 
 	b = byte(0xEA)
 

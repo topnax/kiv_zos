@@ -2,14 +2,14 @@ package myfilesystem
 
 import (
 	log "github.com/sirupsen/logrus"
+	"io"
 	"kiv_zos/utils"
-	"os"
 )
 
 func (fs *MyFileSystem) FindFreeInodeID() NodeID {
 	inodeId := NodeID(0)
 	bytes := make([]byte, 1)
-	_, _ = fs.File.Seek(int64(fs.SuperBlock.InodeBitmapStartAddress), os.SEEK_SET)
+	_, _ = fs.File.Seek(int64(fs.SuperBlock.InodeBitmapStartAddress), io.SeekStart)
 
 	inodeCount := fs.SuperBlock.InodeCount()
 

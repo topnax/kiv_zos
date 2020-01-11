@@ -2,10 +2,10 @@ package myfilesystem
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	"io"
 	"kiv_zos/utils"
 	"math"
-	"os"
 )
 
 func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress Address, bitmapSize Size) {
@@ -15,7 +15,7 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 	dstBytePosition := int(math.Floor(float64(bitPosition / 8)))
 	dstBit := 7 - (bitPosition % 8)
 
-	logrus.Infof("byte %b is going to be set at dstBit=%d", b, dstBit)
+	log.Infof("byte %b is going to be set at dstBit=%d", b, dstBit)
 
 	var newByte byte
 	if value {
@@ -24,11 +24,25 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 		newByte = utils.ClearBit(b, int8(dstBit))
 	}
 
-	fs.File.Seek(int64(bitmapAddress), os.SEEK_SET)
-	fs.File.Seek(int64(dstBytePosition), os.SEEK_CUR)
+	_, err := fs.File.Seek(int64(bitmapAddress), io.SeekStart)
+	if err == nil {
+		_, err = fs.File.Seek(int64(dstBytePosition), io.SeekCurrent)
+		if err == nil {
+			log.Infof("new bit %b", newByte)
+			_, err = fs.File.Write([]byte{newByte})
+			if err != nil {
+				log.Error(err)
+				panic("could not write")
+			}
+		} else {
+			log.Error(err)
+			panic("could not seek 2")
+		}
 
-	logrus.Infof("new bit %b", newByte)
-	fs.File.Write([]byte{newByte})
+	} else {
+		log.Error(err)
+		panic("could not seek")
+	}
 }
 
 func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Address, bitmapSize Size) byte {
@@ -36,18 +50,27 @@ func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Ad
 		panic(fmt.Sprintf("Trying to set a bit in outside of a bitmap position=%d, start address=%d, bitmapSize=%d", bitPosition, bitmapAddress, bitmapSize))
 	}
 
-	_, _ = fs.File.Seek(int64(bitmapAddress), os.SEEK_SET)
+	_, _ = fs.File.Seek(int64(bitmapAddress), io.SeekStart)
 
 	// which byte will be retrieved
 	dstBytePosition := int(math.Floor(float64(bitPosition / 8)))
 
-	fs.File.Seek(int64(dstBytePosition), os.SEEK_CUR)
+	_, err := fs.File.Seek(int64(dstBytePosition), io.SeekCurrent)
+
+	if err != nil {
+		log.Error(err)
+		panic("could not seek")
+	}
 
 	b := make([]byte, 1)
 
-	fs.File.Read(b)
+	_, err = fs.File.Read(b)
+	if err != nil {
+		log.Error(err)
+		panic("could not read")
+	}
 
-	logrus.Infof("Read byte: %b", b[0])
+	log.Infof("Read byte: %b", b[0])
 	return b[0]
 }
 
