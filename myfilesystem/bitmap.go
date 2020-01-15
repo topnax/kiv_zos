@@ -75,10 +75,32 @@ func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Ad
 }
 
 func (fs *MyFileSystem) GetInBitmap(bitPosition int32, bitmapAddress Address, bitmapSize Size) bool {
-
 	b := fs.GetByteByBitInBitmap(bitPosition, bitmapAddress, bitmapSize)
 
 	dstBit := 7 - (bitPosition % 8)
 
 	return utils.HasBit(b, int8(dstBit))
+}
+
+func (fs *MyFileSystem) FindFreeBitInBitmap(bitmapAddress Address, length Size) ID {
+	id := ID(0)
+	bytes := make([]byte, 1)
+	_, _ = fs.File.Seek(int64(bitmapAddress), io.SeekStart)
+
+	inodeCount := fs.SuperBlock.InodeCount()
+
+	for Size(id) < inodeCount {
+		_, _ = fs.File.Read(bytes)
+		for index := int8(0); index < 8; index++ {
+			if !utils.HasBit(bytes[0], 7-index) {
+				return id
+			}
+			id++
+			if Size(id) >= inodeCount {
+				return -1
+			}
+		}
+	}
+	log.Warnf("Free Inode not found")
+	return -1
 }

@@ -4,34 +4,14 @@ import (
 	"encoding/binary"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"kiv_zos/utils"
 	"unsafe"
 )
 
-func (fs *MyFileSystem) FindFreeInodeID() NodeID {
-	inodeId := NodeID(0)
-	bytes := make([]byte, 1)
-	_, _ = fs.File.Seek(int64(fs.SuperBlock.InodeBitmapStartAddress), io.SeekStart)
-
-	inodeCount := fs.SuperBlock.InodeCount()
-
-	for address := fs.SuperBlock.InodeBitmapStartAddress; address < fs.SuperBlock.InodeStartAddress; address += 8 {
-		_, _ = fs.File.Read(bytes)
-		for index := int8(0); index < 8; index++ {
-			if !utils.HasBit(bytes[0], 7-index) {
-				return inodeId
-			}
-			inodeId++
-			if Size(inodeId) >= inodeCount {
-				return -1
-			}
-		}
-	}
-	log.Warnf("Free Inode not found")
-	return -1
+func (fs *MyFileSystem) FindFreeInodeID() ID {
+	return fs.FindFreeBitInBitmap(fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeCount())
 }
 
-func (fs *MyFileSystem) AddInode(inode PseudoInode) NodeID {
+func (fs *MyFileSystem) AddInode(inode PseudoInode) ID {
 	freeInodeID := fs.FindFreeInodeID()
 	if freeInodeID != -1 {
 		// mark in inode bitmap
@@ -45,7 +25,7 @@ func (fs *MyFileSystem) AddInode(inode PseudoInode) NodeID {
 	return -1
 }
 
-func (fs *MyFileSystem) SetInodeAt(id NodeID, inode PseudoInode) {
+func (fs *MyFileSystem) SetInodeAt(id ID, inode PseudoInode) {
 	inodeAddress := fs.GetInodeAddress(id)
 
 	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
@@ -62,7 +42,7 @@ func (fs *MyFileSystem) SetInodeAt(id NodeID, inode PseudoInode) {
 	}
 }
 
-func (fs *MyFileSystem) GetInodeAt(id NodeID) PseudoInode {
+func (fs *MyFileSystem) GetInodeAt(id ID) PseudoInode {
 	inodeAddress := fs.GetInodeAddress(id)
 
 	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
@@ -82,7 +62,7 @@ func (fs *MyFileSystem) GetInodeAt(id NodeID) PseudoInode {
 	}
 }
 
-func (fs *MyFileSystem) ClearInodeById(id NodeID) {
+func (fs *MyFileSystem) ClearInodeById(id ID) {
 	inodeAddress := fs.GetInodeAddress(id)
 
 	fs.SetInBitmap(false, int32(id), inodeAddress, fs.SuperBlock.InodeBitmapSize())
@@ -99,6 +79,6 @@ func (fs *MyFileSystem) ClearInodeById(id NodeID) {
 	}
 }
 
-func (fs *MyFileSystem) GetInodeAddress(id NodeID) Address {
+func (fs *MyFileSystem) GetInodeAddress(id ID) Address {
 	return fs.SuperBlock.InodeStartAddress + Address(Size(id)*Size(unsafe.Sizeof(PseudoInode{})))
 }

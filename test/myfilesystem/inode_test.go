@@ -14,7 +14,7 @@ func TestFindFreeInode(t *testing.T) {
 
 	for i := 0; i < int(fs.SuperBlock.InodeCount()); i++ {
 		id := fs.FindFreeInodeID()
-		want := myfilesystem.NodeID(i)
+		want := myfilesystem.ID(i)
 		if id != want {
 			t.Errorf("Expected different free inode id. wanted=%d got=%d", want, id)
 			return
@@ -44,9 +44,9 @@ func TestSetAndGetInode(t *testing.T) {
 			Indirect2:   150,
 		}
 
-		fs.SetInodeAt(myfilesystem.NodeID(i), inode)
+		fs.SetInodeAt(myfilesystem.ID(i), inode)
 
-		loaded := fs.GetInodeAt(myfilesystem.NodeID(i))
+		loaded := fs.GetInodeAt(myfilesystem.ID(i))
 
 		if inode != loaded {
 			t.Errorf("Loaded and created are not equal at i=%d", i)
@@ -74,7 +74,7 @@ func TestClearInode(t *testing.T) {
 		Indirect2:   150,
 	}
 
-	fs.SetInodeAt(myfilesystem.NodeID(5), inode)
+	fs.SetInodeAt(myfilesystem.ID(5), inode)
 	fs.ClearInodeById(5)
 
 	_, _ = fs.File.Seek(int64(fs.GetInodeAddress(5)), io.SeekStart)

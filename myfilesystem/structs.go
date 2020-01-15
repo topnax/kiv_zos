@@ -12,9 +12,8 @@ const (
 )
 
 type Address int32
-type NodeID int32
+type ID int32
 type Size int32
-type ClusterCount int32
 type ReferenceCounter int8
 
 type SuperBlock struct {
@@ -22,7 +21,7 @@ type SuperBlock struct {
 	VolumeDescriptor        [volumeDescriptor]rune
 	DiskSize                Size
 	ClusterSize             Size
-	ClusterCount            ClusterCount
+	ClusterCount            Size
 	DataBitmapStartAddress  Address
 	InodeBitmapStartAddress Address
 	InodeStartAddress       Address
@@ -61,11 +60,11 @@ type PseudoInode struct {
 	Direct3     Address
 	Direct4     Address
 	Direct5     Address
-	Indirect1   NodeID
-	Indirect2   NodeID
+	Indirect1   ID
+	Indirect2   ID
 }
 
 type DirectoryItem struct {
-	nodeID NodeID
+	nodeID ID
 	name   [maxFileNameLength]rune
 }

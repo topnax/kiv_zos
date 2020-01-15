@@ -91,7 +91,7 @@ func (superBlock *SuperBlock) init(desiredFsSize int) {
 	*/
 
 	superBlock.DiskSize = total
-	superBlock.ClusterCount = ClusterCount(clusterCount)
+	superBlock.ClusterCount = Size(clusterCount)
 
 	superBlock.InodeBitmapStartAddress = Address(unsafe.Sizeof(SuperBlock{}))
 	superBlock.InodeStartAddress = superBlock.InodeBitmapStartAddress + Address(inodeCount)
