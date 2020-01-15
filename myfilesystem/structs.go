@@ -17,15 +17,15 @@ type Size int32
 type ReferenceCounter int8
 
 type SuperBlock struct {
-	Signature               [signatureLength]rune
-	VolumeDescriptor        [volumeDescriptor]rune
-	DiskSize                Size
-	ClusterSize             Size
-	ClusterCount            Size
-	DataBitmapStartAddress  Address
-	InodeBitmapStartAddress Address
-	InodeStartAddress       Address
-	DataStartAddress        Address
+	Signature                 [signatureLength]rune
+	VolumeDescriptor          [volumeDescriptor]rune
+	DiskSize                  Size
+	ClusterSize               Size
+	ClusterCount              Size
+	ClusterBitmapStartAddress Address
+	InodeBitmapStartAddress   Address
+	InodeStartAddress         Address
+	ClusterStartAddress       Address
 }
 
 func (superBlock SuperBlock) info() {
@@ -35,20 +35,20 @@ func (superBlock SuperBlock) info() {
 	log.Infoln("DiskSize:", superBlock.DiskSize)
 	log.Infoln("Inode bitmap start address:", superBlock.InodeBitmapStartAddress)
 	log.Infoln("Inode start address:", superBlock.InodeStartAddress)
-	log.Infoln("Data bitmap start address:", superBlock.DataBitmapStartAddress)
-	log.Infoln("Data start address:", superBlock.DataStartAddress)
+	log.Infoln("Cluster bitmap start address:", superBlock.ClusterBitmapStartAddress)
+	log.Infoln("Clust er start address:", superBlock.ClusterStartAddress)
 }
 
 func (superBlock SuperBlock) InodeCount() Size {
-	return Size(superBlock.DataBitmapStartAddress-superBlock.InodeStartAddress) / Size(unsafe.Sizeof(PseudoInode{}))
+	return Size(superBlock.ClusterBitmapStartAddress-superBlock.InodeStartAddress) / Size(unsafe.Sizeof(PseudoInode{}))
 }
 
 func (superBlock SuperBlock) InodeBitmapSize() Size {
 	return Size(superBlock.InodeStartAddress - superBlock.InodeBitmapStartAddress)
 }
 
-func (superBlock SuperBlock) DataBitmapSize() Size {
-	return Size(superBlock.DataStartAddress - superBlock.DataBitmapStartAddress)
+func (superBlock SuperBlock) ClusterBitmapSize() Size {
+	return Size(superBlock.ClusterStartAddress - superBlock.ClusterBitmapStartAddress)
 }
 
 type PseudoInode struct {

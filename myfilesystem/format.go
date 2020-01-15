@@ -11,7 +11,7 @@ import (
 
 const (
 	inodeRatio  = 0.05
-	clusterSize = 1024
+	ClusterSize = 1024
 )
 
 func (fs *MyFileSystem) Format(desiredFsSize int) {
@@ -20,7 +20,7 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 	fs.SuperBlock = SuperBlock{
 		Signature:        [8]rune{'k', 'r', 'a', 'l', 's', 't'},
 		VolumeDescriptor: [251]rune{'m', 'y', 'f', 's'},
-		ClusterSize:      clusterSize,
+		ClusterSize:      ClusterSize,
 	}
 
 	fs.SuperBlock.init(desiredFsSize)
@@ -96,8 +96,8 @@ func (superBlock *SuperBlock) init(desiredFsSize int) {
 	superBlock.InodeBitmapStartAddress = Address(unsafe.Sizeof(SuperBlock{}))
 	superBlock.InodeStartAddress = superBlock.InodeBitmapStartAddress + Address(inodeCount)
 
-	superBlock.DataBitmapStartAddress = superBlock.InodeStartAddress + Address(inodeCount*Size(unsafe.Sizeof(PseudoInode{})))
-	superBlock.DataStartAddress = superBlock.DataBitmapStartAddress + Address(clusterCount)
+	superBlock.ClusterBitmapStartAddress = superBlock.InodeStartAddress + Address(inodeCount*Size(unsafe.Sizeof(PseudoInode{})))
+	superBlock.ClusterStartAddress = superBlock.ClusterBitmapStartAddress + Address(clusterCount)
 
 	log.Infoln("Calculated inode count:", superBlock.InodeCount())
 

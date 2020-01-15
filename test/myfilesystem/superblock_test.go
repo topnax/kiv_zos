@@ -23,12 +23,12 @@ func TestSuperBlockCreateAndLoad(t *testing.T) {
 		t.Errorf("Loaded FS does not have the same ClusterCount: wanted %d, got %d", fs.SuperBlock.ClusterCount, loaded.SuperBlock.ClusterCount)
 	}
 
-	if fs.SuperBlock.DataBitmapStartAddress != loaded.SuperBlock.DataBitmapStartAddress {
-		t.Errorf("Loaded FS does not have the same DataBitmapStartAddress: wanted %d, got %d", fs.SuperBlock.DataBitmapStartAddress, loaded.SuperBlock.DataBitmapStartAddress)
+	if fs.SuperBlock.ClusterBitmapStartAddress != loaded.SuperBlock.ClusterBitmapStartAddress {
+		t.Errorf("Loaded FS does not have the same ClusterBitmapStartAddress: wanted %d, got %d", fs.SuperBlock.ClusterBitmapStartAddress, loaded.SuperBlock.ClusterBitmapStartAddress)
 	}
 
-	if fs.SuperBlock.DataStartAddress != loaded.SuperBlock.DataStartAddress {
-		t.Errorf("Loaded FS does not have the same DataStartAddress: wanted %d, got %d", fs.SuperBlock.DataStartAddress, loaded.SuperBlock.DataStartAddress)
+	if fs.SuperBlock.ClusterStartAddress != loaded.SuperBlock.ClusterStartAddress {
+		t.Errorf("Loaded FS does not have the same ClusterStartAddress: wanted %d, got %d", fs.SuperBlock.ClusterStartAddress, loaded.SuperBlock.ClusterStartAddress)
 	}
 
 	if fs.SuperBlock.DiskSize != loaded.SuperBlock.DiskSize {
