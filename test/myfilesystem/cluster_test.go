@@ -48,35 +48,10 @@ func TestClearCluster(t *testing.T) {
 
 	fs.Format(1 * 1024 * 1024)
 
-	id, indirect := fs.GetClusterPath(0)
-	if id != 0 && indirect != myfilesystem.NoIndirect {
-		t.Errorf("ClearCluster failed want=%d %d, got=%d %d", 0, myfilesystem.NoIndirect, id, indirect)
-	}
+	fs.SetClusterAt(myfilesystem.ID(5), [myfilesystem.ClusterSize]byte{10, 10, 10, 12, 15, 18})
+	fs.ClearInodeById(5)
 
-	id, indirect = fs.GetClusterPath(4)
-	if id != 4 && indirect != myfilesystem.NoIndirect {
-		t.Errorf("ClearCluster failed want=%d %d, got=%d %d", 4, myfilesystem.NoIndirect, id, indirect)
-	}
-
-	id, indirect = fs.GetClusterPath(5)
-	if id != 5 && indirect != myfilesystem.FirstIndirect {
-		t.Errorf("ClearCluster failed want=%d %d, got=%d %d", 6, myfilesystem.FirstIndirect, id, indirect)
-	}
-
-	id, indirect = fs.GetClusterPath(6)
-	if id != 6 && indirect != myfilesystem.FirstIndirect {
-		t.Errorf("ClearCluster failed want=%d %d, got=%d %d", 6, myfilesystem.FirstIndirect, id, indirect)
-	}
-
-	id, indirect = fs.GetClusterPath(260)
-	if id != 255 && indirect != myfilesystem.FirstIndirect {
-		t.Errorf("ClearCluster failed want=%d %d, got=%d %d", 255, myfilesystem.FirstIndirect, id, indirect)
-	}
-
-	id, indirect = fs.GetClusterPath(261)
-	if id != 0 && indirect < 0 {
-		t.Errorf("ClearCluster failed want=%d %d, got=%d %d", id, 0, id, indirect)
-	}
+	fs.GetInBitmap(5, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterStartAddress-fs.SuperBlock.ClusterBitmapStartAddress))
 
 	fs.Close()
 }
