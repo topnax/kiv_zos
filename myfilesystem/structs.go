@@ -68,3 +68,9 @@ type DirectoryItem struct {
 	nodeID ID
 	name   [maxFileNameLength]rune
 }
+
+type Cluster struct {
+	fs      *MyFileSystem
+	id      ID
+	address Address
+}

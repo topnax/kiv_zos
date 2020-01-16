@@ -1,8 +1,11 @@
 package myfilesystem
 
 import (
+	"encoding/binary"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"unsafe"
 )
 
 func (fs *MyFileSystem) FindFreeClusterID() ID {
@@ -40,7 +43,7 @@ func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	}
 }
 
-func (fs *MyFileSystem) GetClusterAt(id ID) [ClusterSize]byte {
+func (fs *MyFileSystem) GetClusterDataAt(id ID) [ClusterSize]byte {
 	inodeAddress := fs.GetClusterAddress(id)
 
 	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
@@ -67,4 +70,52 @@ func (fs *MyFileSystem) ClearClusterById(id ID) {
 
 func (fs *MyFileSystem) GetClusterAddress(id ID) Address {
 	return fs.SuperBlock.ClusterStartAddress + Address(Size(id)*Size(ClusterSize))
+}
+
+func (fs *MyFileSystem) GetCluster(id ID) Cluster {
+	clusterAddress := fs.GetClusterAddress(id)
+	return Cluster{
+		fs:      fs,
+		id:      id,
+		address: clusterAddress,
+	}
+}
+
+func (cluster *Cluster) WriteAddress(address Address, addressId ID) {
+	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
+
+	if err != nil {
+		log.Error(err)
+		panic(fmt.Sprint("could not seek to start of cluster of ID %d", cluster.id))
+	}
+
+	_, err = cluster.fs.File.Seek(int64(unsafe.Sizeof(Address(0)))*int64(addressId), io.SeekCurrent)
+
+	if err != nil {
+		log.Error(err)
+		panic(fmt.Sprint("could not seek to indirect address address"))
+	}
+
+	err = binary.Write(cluster.fs.File, binary.LittleEndian, address)
+
+	if err != nil {
+		log.Error(err)
+		panic(fmt.Sprint("could not do binary write of"))
+	}
+}
+
+func (cluster *Cluster) WriteData(data [ClusterSize]byte) {
+	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
+
+	if err != nil {
+		log.Error(err)
+		panic(fmt.Sprint("could not seek to start of cluster of ID %d", cluster.id))
+	}
+
+	_, err = cluster.fs.File.Write(data[:])
+
+	if err != nil {
+		log.Error(err)
+		panic(fmt.Sprint("could not write"))
+	}
 }

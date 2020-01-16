@@ -33,7 +33,7 @@ func TestSetAndGetCluster(t *testing.T) {
 
 		fs.SetClusterAt(myfilesystem.ID(i), data)
 
-		loaded := fs.GetClusterAt(myfilesystem.ID(i))
+		loaded := fs.GetClusterDataAt(myfilesystem.ID(i))
 
 		if data != loaded {
 			t.Errorf("Loaded and created are not equal at i=%d", i)
