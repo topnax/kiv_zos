@@ -27,6 +27,7 @@ func (fs *MyFileSystem) AddInode(inode PseudoInode) ID {
 
 func (fs *MyFileSystem) SetInodeAt(id ID, inode PseudoInode) {
 	inodeAddress := fs.GetInodeAddress(id)
+	log.Infof("Setting an inode at address %d", inodeAddress)
 
 	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
 

@@ -29,6 +29,8 @@ func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	clusterAddress := fs.GetClusterAddress(id)
 
+	log.Infof("SetClusterAt writing to address=%d for ID of %d", clusterAddress, id)
+	log.Infof("written %b", data)
 	_, err := fs.File.Seek(int64(clusterAddress), io.SeekStart)
 
 	if err == nil {
@@ -81,8 +83,9 @@ func (fs *MyFileSystem) GetCluster(id ID) Cluster {
 	}
 }
 
-func (cluster *Cluster) WriteAddress(address Address, addressId ID) {
+func (cluster Cluster) WriteAddress(address Address, addressId ID) {
 	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
+	log.Infof("WriteAddress seeking to %d", cluster.address)
 
 	if err != nil {
 		log.Error(err)

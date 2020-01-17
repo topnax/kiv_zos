@@ -28,20 +28,22 @@ func (fs *MyFileSystem) GetClusterPath(id int) (int, int) {
 	}
 }
 
-func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode *PseudoInode, clusterId int) ID {
+func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode PseudoInode, inodeId ID, clusterId int) ID {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
-
+	logrus.Infof("StartAddData Inode Indirect1 addr %d", inode.Indirect1)
+	result := ID(-1)
 	if indirectIndex == NoIndirect {
-		return fs.WriteToDirect(inode, clusterIndex, data)
+		result = fs.WriteToDirect(&inode, clusterIndex, data)
 	} else if indirectIndex == FirstIndirect {
-		return fs.WriteDataToIndirect(clusterIndex, &inode.Indirect1, data)
-
+		result = fs.WriteDataToIndirect(clusterIndex, &inode.Indirect1, data)
 	} else if indirectIndex != FileTooLarge {
-		return fs.WriteDataToSecondIndirect(clusterIndex, indirectIndex, inode, data)
+		result = fs.WriteDataToSecondIndirect(clusterIndex, indirectIndex, &inode, data)
 	} else {
 		return -1
 	}
-
+	logrus.Infof("EndAddData Inode Indirect1 addr %d", inode.Indirect1)
+	fs.SetInodeAt(inodeId, inode)
+	return result
 }
 
 func (fs *MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data [1024]byte) ID {
@@ -52,15 +54,14 @@ func (fs *MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data
 		&inode.Direct4,
 		&inode.Direct5,
 	}
-	freeClusterId := fs.FindFreeClusterID()
-	if freeClusterId != -1 {
-		*(inodeDirectPtrs[clusterIndex]) = fs.GetClusterAddress(freeClusterId)
-		fs.SetClusterAt(freeClusterId, data)
-		return freeClusterId
-	} else {
-		logrus.Error("WriteToDirect could not find a free cluster ID")
-		return -1
+
+	clusterId := fs.AddCluster(data)
+
+	if clusterId != -1 {
+		*(inodeDirectPtrs[clusterIndex]) = fs.GetClusterAddress(clusterId)
 	}
+
+	return clusterId
 }
 
 func (fs *MyFileSystem) WriteDataToIndirect(clusterIndex int, indirectPointer *ID, data [1024]byte) ID {
@@ -68,15 +69,16 @@ func (fs *MyFileSystem) WriteDataToIndirect(clusterIndex int, indirectPointer *I
 	if freeClusterId != -1 {
 		if clusterIndex == 0 {
 			// cluster was not created yet
-			*indirectPointer = freeClusterId
-			fs.SetClusterAt(freeClusterId, [ClusterSize]byte{})
+			*indirectPointer = fs.AddCluster([ClusterSize]byte{})
+
 			freeClusterId = fs.FindFreeClusterID()
 		}
-		if freeClusterId != -1 {
-			freeClusterAddress := fs.GetClusterAddress(freeClusterId)
-			fs.GetCluster(*indirectPointer).WriteAddress(freeClusterAddress, ID(clusterIndex))
-			fs.SetClusterAt(freeClusterId, data)
-			return freeClusterId
+
+		clusterId := fs.AddCluster(data)
+		if clusterId != -1 {
+			logrus.Infof("Written to %d", fs.GetClusterAddress(clusterId))
+			fs.GetCluster(*indirectPointer).WriteAddress(fs.GetClusterAddress(clusterId), ID(clusterIndex))
+			return clusterId
 		} else {
 			fs.ClearClusterById(*indirectPointer)
 		}
@@ -91,8 +93,7 @@ func (fs *MyFileSystem) WriteDataToSecondIndirect(clusterIndex int, indirectInde
 		freeClusterId := fs.FindFreeClusterID()
 		if freeClusterId != -1 {
 			inode.Indirect2 = freeClusterId
-			fs.SetClusterAt(freeClusterId, [ClusterSize]byte{})
-			freeClusterId = fs.FindFreeClusterID()
+			freeClusterId = fs.AddCluster([ClusterSize]byte{})
 		} else {
 			return -1
 		}
