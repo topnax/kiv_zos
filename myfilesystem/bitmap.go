@@ -15,7 +15,7 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 	dstBytePosition := int(math.Floor(float64(bitPosition / 8)))
 	dstBit := 7 - (bitPosition % 8)
 
-	log.Infof("byte %b is going to be set at dstBit=%d", b, dstBit)
+	log.Debugf("byte %b is going to be set at dstBit=%d", b, dstBit)
 
 	var newByte byte
 	if value {
@@ -28,7 +28,7 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 	if err == nil {
 		_, err = fs.File.Seek(int64(dstBytePosition), io.SeekCurrent)
 		if err == nil {
-			log.Infof("new bit %b", newByte)
+			log.Debugf("new bit %b", newByte)
 			_, err = fs.File.Write([]byte{newByte})
 			if err != nil {
 				log.Error(err)
@@ -70,7 +70,7 @@ func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Ad
 		panic("could not read")
 	}
 
-	log.Infof("Read byte: %b", b[0])
+	log.Debugf("Read byte: %b", b[0])
 	return b[0]
 }
 

@@ -1,8 +1,11 @@
 package myfilesystem
 
 import (
+	"encoding/binary"
+	"io"
 	"kiv_zos/myfilesystem"
 	"testing"
+	"unsafe"
 )
 
 func TestFindFreeCluster(t *testing.T) {
@@ -52,6 +55,156 @@ func TestClearCluster(t *testing.T) {
 	fs.ClearInodeById(5)
 
 	fs.GetInBitmap(5, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterStartAddress-fs.SuperBlock.ClusterBitmapStartAddress))
+
+	fs.Close()
+}
+
+func TestSetId(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+
+	want := myfilesystem.ID(99)
+
+	fs.GetCluster(id).WriteId(want, 0)
+
+	_, _ = fs.File.Seek(int64(fs.GetClusterAddress(id)), io.SeekStart)
+
+	var read myfilesystem.ID
+
+	binary.Read(fs.File, binary.LittleEndian, &read)
+
+	if read != want {
+		t.Errorf("want=%d, read=%d", want, read)
+	}
+
+	want = myfilesystem.ID(150)
+
+	fs.GetCluster(id).WriteId(want, 50)
+
+	_, _ = fs.File.Seek(int64(fs.GetClusterAddress(id)), io.SeekStart)
+	_, _ = fs.File.Seek(int64(unsafe.Sizeof(myfilesystem.ID(0))*50), io.SeekCurrent)
+
+	binary.Read(fs.File, binary.LittleEndian, &read)
+
+	if read != want {
+		t.Errorf("want=%d, read=%d", want, read)
+	}
+
+	fs.Close()
+}
+
+func TestReadId(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+
+	_, _ = fs.File.Seek(int64(fs.GetClusterAddress(id)), io.SeekStart)
+
+	want := myfilesystem.ID(99)
+	_ = binary.Write(fs.File, binary.LittleEndian, want)
+
+	got := fs.GetCluster(id).ReadId(0)
+
+	if want != got {
+		t.Errorf("want=%d, got=%d", want, got)
+	}
+
+	fs.Close()
+}
+
+func TestSetAndReadId(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+
+	fs.GetCluster(id).WriteId(99, 0)
+
+	read := fs.GetCluster(id).ReadId(0)
+	if read != 99 {
+		t.Errorf("TestSetAndReadId failed want=%d, got=%d", 99, read)
+	}
+
+	fs.Close()
+}
+
+func TestSetAddress(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+
+	want := myfilesystem.Address(99)
+
+	fs.GetCluster(id).WriteAddress(want, 0)
+
+	_, _ = fs.File.Seek(int64(fs.GetClusterAddress(id)), io.SeekStart)
+
+	var read myfilesystem.Address
+
+	binary.Read(fs.File, binary.LittleEndian, &read)
+
+	if read != want {
+		t.Errorf("want=%d, read=%d", want, read)
+	}
+
+	want = myfilesystem.Address(150)
+
+	fs.GetCluster(id).WriteAddress(want, 50)
+
+	_, _ = fs.File.Seek(int64(fs.GetClusterAddress(id)), io.SeekStart)
+	_, _ = fs.File.Seek(int64(unsafe.Sizeof(myfilesystem.ID(0))*50), io.SeekCurrent)
+
+	binary.Read(fs.File, binary.LittleEndian, &read)
+
+	if read != want {
+		t.Errorf("want=%d, read=%d", want, read)
+	}
+
+	fs.Close()
+}
+
+func TestReadAddress(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+
+	_, _ = fs.File.Seek(int64(fs.GetClusterAddress(id)), io.SeekStart)
+
+	want := myfilesystem.Address(99)
+	_ = binary.Write(fs.File, binary.LittleEndian, want)
+
+	got := fs.GetCluster(id).ReadAddress(0)
+
+	if want != got {
+		t.Errorf("want=%d, got=%d", want, got)
+	}
+
+	fs.Close()
+}
+
+func TestSetAndReadAddress(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+
+	fs.GetCluster(id).WriteAddress(99, 0)
+
+	read := fs.GetCluster(id).ReadAddress(0)
+	if read != 99 {
+		t.Errorf("TestSetAndReadAddress failed want=%d, got=%d", 99, read)
+	}
 
 	fs.Close()
 }
