@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	inodeRatio = 0.05
-	//ClusterSize = 1024
-	ClusterSize = 2048
+	inodeRatio  = 0.05
+	ClusterSize = 1024
+	//ClusterSize = 2048
 )
 
 func (fs *MyFileSystem) Format(desiredFsSize int) {
-	log.Infof("About to format a volume of desiredFsSize %d bytes, %d kB, %d MB", desiredFsSize, desiredFsSize/1024, desiredFsSize/1024/1024)
+	log.Infof("About to format a volume of desiredFsSize %d bytes, %d kB, %d MB", desiredFsSize, desiredFsSize/ClusterSize, desiredFsSize/ClusterSize/ClusterSize)
 
 	fs.SuperBlock = SuperBlock{
 		Signature:        [8]rune{'k', 'r', 'a', 'l', 's', 't'},
@@ -48,11 +48,11 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 				log.Error(err)
 			}
 		} else {
-			log.Errorf("Could not truncate a File at '%s' of size %d kB", fs.filePath, desiredFsSize/1024)
+			log.Errorf("Could not truncate a File at '%s' of size %d kB", fs.filePath, desiredFsSize/ClusterSize)
 			log.Error(err)
 		}
 	} else {
-		log.Errorf("Could not create a File at '%s' of size %d kB", fs.filePath, desiredFsSize/1024)
+		log.Errorf("Could not create a File at '%s' of size %d kB", fs.filePath, desiredFsSize/ClusterSize)
 		log.Error(err)
 	}
 }

@@ -112,7 +112,7 @@ func (fs *MyFileSystem) WriteDataToIndirectCluster(cluster Cluster, clusterIndex
 	return clusterId
 }
 
-func (fs *MyFileSystem) WriteDataToTheFirstIndirectCluster(inode *PseudoInode, clusterIndex int, data [1024]byte) ID {
+func (fs *MyFileSystem) WriteDataToTheFirstIndirectCluster(inode *PseudoInode, clusterIndex int, data [ClusterSize]byte) ID {
 	var cluster Cluster
 	if clusterIndex == 0 {
 		// if first indirect cluster was not yet created
@@ -169,31 +169,7 @@ func (fs MyFileSystem) WriteDataToSecondIndirectCluster(inode *PseudoInode, clus
 	return fs.WriteDataToIndirectCluster(indirectCluster, clusterIndex, data)
 }
 
-//func (fs *MyFileSystem) WriteDataToIndirectCluster(clusterIndex int, indirectPointer *ID, data [1024]byte) ID {
-//	freeClusterId := fs.FindFreeClusterID()
-//	if freeClusterId != -1 {
-//		if clusterIndex == 0 {
-//			// cluster was not created yet
-//			*indirectPointer = fs.AddCluster([ClusterSize]byte{})
-//			logrus.Printf("WriteDataToIndirectCluster created a new cluster of pointers %d", *indirectPointer)
-//			freeClusterId = fs.FindFreeClusterID()
-//		}
-//
-//		clusterId := fs.AddCluster(data)
-//		if clusterId != -1 {
-//			logrus.Infof("WriteDataToIndirectCluster written clusterID=%d index=%d to address %d", clusterId, clusterIndex, fs.GetClusterAddress(clusterId))
-//			logrus.Infof("ID pointer %d", *indirectPointer)
-//			fs.GetCluster(*indirectPointer).WriteAddress(fs.GetClusterAddress(clusterId), ID(clusterIndex))
-//			logrus.Infof("ID pointer %d", *indirectPointer)
-//			return clusterId
-//		} else {
-//			fs.ClearClusterById(*indirectPointer)
-//		}
-//	}
-//	return -1
-//}
-
-func (fs *MyFileSystem) WriteDataToSecondIndirect(clusterIndex int, indirectIndex int, inode *PseudoInode, bytes [1024]byte) ID {
+func (fs *MyFileSystem) WriteDataToSecondIndirect(clusterIndex int, indirectIndex int, inode *PseudoInode, bytes [ClusterSize]byte) ID {
 
 	secondIndirectClusterId := ID(-1)
 
