@@ -28,6 +28,40 @@ func (fs *MyFileSystem) GetClusterPath(id int) (int, int) {
 	}
 }
 
+func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode, clusterId int) [ClusterSize]byte {
+	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
+
+	if indirectIndex == NoIndirect {
+		return fs.ReadFromDirect(inode, clusterIndex)
+	} else if indirectIndex == FirstIndirect {
+		return fs.ReadFromFirstIndirect(inode, clusterIndex)
+	} else if indirectIndex != FileTooLarge {
+		return fs.ReadFromSecondIndirect(inode, clusterIndex, indirectIndex)
+	} else {
+		panic("Could not read out of the bounds")
+	}
+}
+
+func (fs MyFileSystem) ReadFromDirect(inode PseudoInode, clusterIndex int) [ClusterSize]byte {
+	inodeDirectPtrs := []Address{
+		inode.Direct1,
+		inode.Direct2,
+		inode.Direct3,
+		inode.Direct4,
+		inode.Direct5,
+	}
+
+	return fs.GetClusterDataAtAddress(inodeDirectPtrs[clusterIndex])
+}
+
+func (fs MyFileSystem) ReadFromFirstIndirect(inode PseudoInode, clusterIndex int) [ClusterSize]byte {
+	return fs.GetClusterDataAtAddress(fs.GetCluster(inode.Indirect1).ReadAddress(ID(clusterIndex)))
+}
+
+func (fs MyFileSystem) ReadFromSecondIndirect(inode PseudoInode, clusterIndex int, indirectIndex int) [ClusterSize]byte {
+	return fs.GetClusterDataAtAddress(fs.GetCluster(fs.GetCluster(inode.Indirect2).ReadId(ID(indirectIndex))).ReadAddress(ID(clusterIndex)))
+}
+
 func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode PseudoInode, inodeId ID, clusterId int) ID {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 	logrus.Infof("StartAddData Inode Indirect1 addr %d", inode.Indirect1)
@@ -50,7 +84,7 @@ func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode PseudoInode
 	return result
 }
 
-func (fs MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data [1024]byte) ID {
+func (fs MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data [ClusterSize]byte) ID {
 	inodeDirectPtrs := []*Address{
 		&inode.Direct1,
 		&inode.Direct2,
@@ -68,7 +102,7 @@ func (fs MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data 
 	return clusterId
 }
 
-func (fs *MyFileSystem) WriteDataToIndirectCluster(cluster Cluster, clusterIndex int, data [1024]byte) ID {
+func (fs *MyFileSystem) WriteDataToIndirectCluster(cluster Cluster, clusterIndex int, data [ClusterSize]byte) ID {
 	clusterId := fs.AddCluster(data)
 
 	if clusterId > -1 {
@@ -77,6 +111,7 @@ func (fs *MyFileSystem) WriteDataToIndirectCluster(cluster Cluster, clusterIndex
 
 	return clusterId
 }
+
 func (fs *MyFileSystem) WriteDataToTheFirstIndirectCluster(inode *PseudoInode, clusterIndex int, data [1024]byte) ID {
 	var cluster Cluster
 	if clusterIndex == 0 {

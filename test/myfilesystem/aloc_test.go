@@ -357,3 +357,99 @@ func TestSimpleAddData4(t *testing.T) {
 
 	fs.Close()
 }
+
+func TestAddAndReadData1(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	inode := myfilesystem.PseudoInode{
+		IsDirectory: false,
+		References:  0,
+		FileSize:    0,
+		Direct1:     0,
+		Direct2:     0,
+		Direct3:     0,
+		Direct4:     0,
+		Direct5:     0,
+		Indirect1:   0,
+		Indirect2:   0,
+	}
+
+	if true {
+		fs.SetInodeAt(0, inode)
+
+		want := [myfilesystem.ClusterSize]byte{10, 11, 12, 13, 14, 0, 15}
+
+		fs.AddDataToInode(want, fs.GetInodeAt(0), 0, 0)
+
+		got := fs.ReadDataFromInode(fs.GetInodeAt(0), 0)
+
+		if want != got {
+			t.Errorf("want=%b, got=%b", want, got)
+		}
+	}
+
+	if true {
+		want := [myfilesystem.ClusterSize]byte{10, 1, 4, 5, 14, 0, 11}
+
+		fs.AddDataToInode(want, fs.GetInodeAt(0), 0, 1)
+
+		got := fs.ReadDataFromInode(fs.GetInodeAt(0), 1)
+
+		if want != got {
+			t.Errorf("want=%b, got=%b", want, got)
+		}
+	}
+
+	if true {
+		want := [myfilesystem.ClusterSize]byte{10, 1, 66, 99, 14, 0, 11}
+
+		fs.AddDataToInode(want, fs.GetInodeAt(0), 0, 4)
+
+		got := fs.ReadDataFromInode(fs.GetInodeAt(0), 4)
+
+		if want != got {
+			t.Errorf("want=%b, got=%b", want, got)
+		}
+	}
+
+	fs.Close()
+}
+
+func TestAddAndReadDataIndirect(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	inode := myfilesystem.PseudoInode{
+		IsDirectory: false,
+		References:  0,
+		FileSize:    0,
+		Direct1:     0,
+		Direct2:     0,
+		Direct3:     0,
+		Direct4:     0,
+		Direct5:     0,
+		Indirect1:   0,
+		Indirect2:   0,
+	}
+
+	fs.SetInodeAt(0, inode)
+
+	if true {
+		for i := 0; i < 964; i++ {
+			want := [myfilesystem.ClusterSize]byte{byte(i), 11, 12, 13, 14, 0, byte(i)}
+
+			fs.AddDataToInode(want, fs.GetInodeAt(0), 0, i)
+
+			got := fs.ReadDataFromInode(fs.GetInodeAt(0), i)
+
+			if want != got {
+				t.Errorf("tc=%d, want=%b, got=%b", i, want, got)
+			}
+		}
+	}
+
+	fs.Close()
+}

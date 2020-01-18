@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	inodeRatio  = 0.05
-	ClusterSize = 1024
+	inodeRatio = 0.05
+	//ClusterSize = 1024
+	ClusterSize = 2048
 )
 
 func (fs *MyFileSystem) Format(desiredFsSize int) {

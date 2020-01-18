@@ -46,9 +46,12 @@ func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 }
 
 func (fs *MyFileSystem) GetClusterDataAt(id ID) [ClusterSize]byte {
-	inodeAddress := fs.GetClusterAddress(id)
+	clusterAddress := fs.GetClusterAddress(id)
+	return fs.GetClusterDataAtAddress(clusterAddress)
+}
 
-	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
+func (fs *MyFileSystem) GetClusterDataAtAddress(address Address) [ClusterSize]byte {
+	_, err := fs.File.Seek(int64(address), io.SeekStart)
 
 	if err == nil {
 		data := [ClusterSize]byte{}
