@@ -453,3 +453,40 @@ func TestAddAndReadDataIndirect(t *testing.T) {
 
 	fs.Close()
 }
+
+func TestAddAndReadDataIndirectLarge(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("lgfs")
+
+	fs.Format(30 * 1024 * 1024)
+
+	inode := myfilesystem.PseudoInode{
+		IsDirectory: false,
+		References:  0,
+		FileSize:    0,
+		Direct1:     0,
+		Direct2:     0,
+		Direct3:     0,
+		Direct4:     0,
+		Direct5:     0,
+		Indirect1:   0,
+		Indirect2:   0,
+	}
+
+	fs.SetInodeAt(0, inode)
+
+	if true {
+		for i := 0; i < 10240; i++ {
+			want := [myfilesystem.ClusterSize]byte{byte(i), 11, 12, 13, 14, 0, byte(i)}
+			logrus.SetLevel(logrus.ErrorLevel)
+			fs.AddDataToInode(want, fs.GetInodeAt(0), 0, i)
+
+			//got := fs.ReadDataFromInode(fs.GetInodeAt(0), i)
+			//
+			//if want != got {
+			//	t.Errorf("tc=%d, want=%b, got=%b", i, want, got)
+			//}
+		}
+	}
+
+	fs.Close()
+}

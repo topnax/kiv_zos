@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	maxFileNameLength = 15
+	maxFileNameLength = 12
 	signatureLength   = 8
 	volumeDescriptor  = 251
 )
