@@ -8,6 +8,10 @@ import (
 	"math"
 )
 
+const (
+	ReadSize = 4000
+)
+
 func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress Address, bitmapSize Size) {
 	b := fs.GetByteByBitInBitmap(bitPosition, bitmapAddress, bitmapSize)
 
@@ -38,7 +42,6 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 			log.Error(err)
 			panic("could not seek 2")
 		}
-
 	} else {
 		log.Error(err)
 		panic("could not seek")
@@ -87,20 +90,39 @@ func (fs *MyFileSystem) FindFreeBitInBitmap(bitmapAddress Address, length Size) 
 	bytes := make([]byte, 1)
 	_, _ = fs.File.Seek(int64(bitmapAddress), io.SeekStart)
 
-	inodeCount := fs.SuperBlock.InodeCount()
-
-	for Size(id) < inodeCount {
+	for Size(id) < length {
 		_, _ = fs.File.Read(bytes)
 		for index := int8(0); index < 8; index++ {
 			if !utils.HasBit(bytes[0], 7-index) {
 				return id
 			}
 			id++
-			if Size(id) >= inodeCount {
+			if Size(id) >= length {
 				return -1
 			}
 		}
 	}
-	log.Warnf("Free Inode not found")
+	log.Warnf("Free bitr in bitmap not found not found")
 	return -1
+}
+
+func FindFreeBitsInBitmap(desired ID, bytes []byte) []ID {
+	ids := []ID{}
+	found := ID(0)
+	id := ID(0)
+
+	for _, b := range bytes {
+		for index := int8(0); index < 8; index++ {
+			if !utils.HasBit(b, 7-index) {
+				found++
+				ids = append(ids, id)
+			}
+			id++
+			if found >= desired {
+				return ids
+			}
+		}
+	}
+
+	return ids
 }
