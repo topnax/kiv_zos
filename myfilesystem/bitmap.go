@@ -88,8 +88,12 @@ func (fs *MyFileSystem) GetInBitmap(bitPosition int32, bitmapAddress Address, bi
 func (fs *MyFileSystem) FindFreeBitInBitmap(bitmapAddress Address, length Size) ID {
 	id := ID(0)
 	bytes := make([]byte, 1)
-	_, _ = fs.File.Seek(int64(bitmapAddress), io.SeekStart)
+	_, err := fs.File.Seek(int64(bitmapAddress), io.SeekStart)
 
+	if err != nil {
+		log.Error(err)
+		panic("Could not seek")
+	}
 	for Size(id) < length {
 		_, _ = fs.File.Read(bytes)
 		for index := int8(0); index < 8; index++ {
@@ -102,11 +106,57 @@ func (fs *MyFileSystem) FindFreeBitInBitmap(bitmapAddress Address, length Size) 
 			}
 		}
 	}
-	log.Warnf("Free bitr in bitmap not found not found")
+	log.Warnf("Free bit in bitmap not found not found")
 	return -1
 }
 
-func FindFreeBitsInBitmap(desired ID, bytes []byte) []ID {
+func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address, bitmapSize Size, bitCount Size) []ID {
+	if desired == -1 {
+		desired = ReadSize * 8
+	}
+	_, err := fs.File.Seek(int64(bitmapAddress), io.SeekStart)
+
+	ids := []ID{}
+
+	if err != nil {
+		log.Error(err)
+		panic("Could not seek")
+	}
+
+	currentAddr := bitmapAddress
+	i := 0
+	for currentAddr < bitmapAddress+Address(bitmapSize) {
+		bytes := make([]byte, utils.Min(ReadSize, int(bitmapSize)))
+
+		read, err := fs.File.Read(bytes)
+		if err != nil {
+			log.Error(err)
+			log.Errorf("Could not read %d bytes", len(bytes))
+			panic("Could not read")
+		}
+
+		ids = append(ids, FindFreeBitsInBytes(ID(utils.Min(desired-len(ids), read*8)), bytes, i*ReadSize*8)...)
+
+		idsLen := len(ids)
+		if len(ids) >= desired {
+			for i := 0; i < utils.Min(8, idsLen); i++ {
+				// to be removed
+				tbr := idsLen - i - 1
+				if ids[tbr] >= ID(bitCount) {
+					ids = append(ids[:tbr], ids[tbr+1:]...)
+					log.Warnf("Removing free bit that exceeded bit at tbr=%d", tbr)
+				}
+			}
+			return ids
+		}
+		currentAddr += Address(len(bytes))
+		i++
+	}
+
+	return ids
+}
+
+func FindFreeBitsInBytes(desired ID, bytes []byte, offset int) []ID {
 	ids := []ID{}
 	found := ID(0)
 	id := ID(0)
@@ -115,7 +165,7 @@ func FindFreeBitsInBitmap(desired ID, bytes []byte) []ID {
 		for index := int8(0); index < 8; index++ {
 			if !utils.HasBit(b, 7-index) {
 				found++
-				ids = append(ids, id)
+				ids = append(ids, id+ID(offset))
 			}
 			id++
 			if found >= desired {

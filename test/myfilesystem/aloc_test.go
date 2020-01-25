@@ -121,7 +121,7 @@ func TestSimpleAddData(t *testing.T) {
 	_, _ = fs.File.Read(read[:])
 
 	if read != data {
-		t.Errorf("Want=%b got=%b", data, read)
+		t.Fatalf("Want=%b got=%b", data, read)
 	}
 
 	data = [myfilesystem.ClusterSize]byte{10, 11, 50, 9, 14, 0, 15}
@@ -135,7 +135,7 @@ func TestSimpleAddData(t *testing.T) {
 	_, _ = fs.File.Read(read[:])
 
 	if read != data {
-		t.Errorf("Want=%b got=%b", data, read)
+		t.Fatalf("read2 failed: want=%b got=%b", data, read)
 	}
 
 	data = [myfilesystem.ClusterSize]byte{10, 11, 12, 13, 14, 0, 15}
@@ -268,7 +268,8 @@ func TestSimpleAddData4(t *testing.T) {
 	data2 := [myfilesystem.ClusterSize]byte{10, 11, 12, 19, 10, 0, 15}
 	data3 := [myfilesystem.ClusterSize]byte{10, 11, 12, 20, 10, 0, 15}
 	data4 := [myfilesystem.ClusterSize]byte{10, 11, 12, 20, 10, 0, 99}
-	data5 := [myfilesystem.ClusterSize]byte{10, 11, 12, 20, 17, 0, 99}
+	//data5 := [myfilesystem.ClusterSize]byte{10, 0xFA, 12, 20, 17, 0, 99}
+	data5 := [myfilesystem.ClusterSize]byte{1, 1, 1, 1, 1, 1, 1, 1}
 	logrus.Warnf("SecondWrite")
 	fs.AddDataToInode(data2, fs.GetInodeAt(0), 0, 260+256)
 	logrus.Warnf("ThirdWrite")
@@ -277,64 +278,64 @@ func TestSimpleAddData4(t *testing.T) {
 	fs.AddDataToInode(data4, fs.GetInodeAt(0), 0, 260+256+256)
 	fs.AddDataToInode(data5, fs.GetInodeAt(0), 0, 260+256+256+1)
 
+	////
+	//if true {
+	//	indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
 	//
-	if true {
-		indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
-
-		id := indirect2Cluster.ReadId(0)
-
-		address := fs.GetCluster(id).ReadAddress(0)
-
-		logrus.Infof("Read and seeking to address %d", address)
-		_, _ = fs.File.Seek(int64(address), io.SeekStart)
-
-		read := [myfilesystem.ClusterSize]byte{}
-
-		_, _ = fs.File.Read(read[:])
-
-		if read != data1 {
-			t.Errorf("Want=%b got=%b", data1, read)
-		}
-	}
-
-	if true {
-		indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
-
-		id := indirect2Cluster.ReadId(0)
-
-		address := fs.GetCluster(id).ReadAddress(255)
-
-		logrus.Infof("Read and seeking to address %d", address)
-		_, _ = fs.File.Seek(int64(address), io.SeekStart)
-		//_, _ = fs.File.Seek(int64(unsafe.Sizeof(myfilesystem.Address(0))), io.SeekCurrent)
-
-		read := [myfilesystem.ClusterSize]byte{}
-
-		_, _ = fs.File.Read(read[:])
-
-		if read != data2 {
-			t.Errorf("Want=%b got=%b", data2, read)
-		}
-	}
-
-	if true {
-		indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
-
-		id := indirect2Cluster.ReadId(1)
-
-		address := fs.GetCluster(id).ReadAddress(0)
-
-		logrus.Infof("Read and seeking to address %d", address)
-		_, _ = fs.File.Seek(int64(address), io.SeekStart)
-
-		read := [myfilesystem.ClusterSize]byte{}
-
-		_, _ = fs.File.Read(read[:])
-
-		if read != data3 {
-			t.Errorf("Want=%b got=%b", data3, read)
-		}
-	}
+	//	id := indirect2Cluster.ReadId(0)
+	//
+	//	address := fs.GetCluster(id).ReadAddress(0)
+	//
+	//	logrus.Infof("Read and seeking to address %d", address)
+	//	_, _ = fs.File.Seek(int64(address), io.SeekStart)
+	//
+	//	read := [myfilesystem.ClusterSize]byte{}
+	//
+	//	_, _ = fs.File.Read(read[:])
+	//
+	//	if read != data1 {
+	//		t.Errorf("Want=%b got=%b", data1, read)
+	//	}
+	//}
+	//
+	//if true {
+	//	indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
+	//
+	//	id := indirect2Cluster.ReadId(0)
+	//
+	//	address := fs.GetCluster(id).ReadAddress(255)
+	//
+	//	logrus.Infof("Read and seeking to address %d", address)
+	//	_, _ = fs.File.Seek(int64(address), io.SeekStart)
+	//	//_, _ = fs.File.Seek(int64(unsafe.Sizeof(myfilesystem.Address(0))), io.SeekCurrent)
+	//
+	//	read := [myfilesystem.ClusterSize]byte{}
+	//
+	//	_, _ = fs.File.Read(read[:])
+	//
+	//	if read != data2 {
+	//		t.Errorf("Want=%b got=%b", data2, read)
+	//	}
+	//}
+	//
+	//if true {
+	//	indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
+	//
+	//	id := indirect2Cluster.ReadId(1)
+	//
+	//	address := fs.GetCluster(id).ReadAddress(0)
+	//
+	//	logrus.Infof("Read and seeking to address %d", address)
+	//	_, _ = fs.File.Seek(int64(address), io.SeekStart)
+	//
+	//	read := [myfilesystem.ClusterSize]byte{}
+	//
+	//	_, _ = fs.File.Read(read[:])
+	//
+	//	if read != data3 {
+	//		t.Errorf("Want=%b got=%b", data3, read)
+	//	}
+	//}
 
 	if true {
 		indirect2Cluster := fs.GetCluster(fs.GetInodeAt(0).Indirect2)
@@ -343,6 +344,8 @@ func TestSimpleAddData4(t *testing.T) {
 
 		address := fs.GetCluster(id).ReadAddress(0)
 
+		logrus.Infof("data: %v", fs.GetClusterDataAtAddress(address))
+		logrus.Infof("data: %v", fs.GetCluster(id).ReadAddress(0))
 		logrus.Infof("Read and seeking to address %d", address)
 		_, _ = fs.File.Seek(int64(address), io.SeekStart)
 
@@ -455,9 +458,11 @@ func TestAddAndReadDataIndirect(t *testing.T) {
 }
 
 func TestAddAndReadDataIndirectLarge(t *testing.T) {
+	logrus.SetLevel(logrus.ErrorLevel)
+
 	fs := myfilesystem.NewMyFileSystem("lgfs")
 
-	fs.Format(30 * 1024 * 1024)
+	fs.Format(150 * 1024 * 1024)
 
 	inode := myfilesystem.PseudoInode{
 		IsDirectory: false,
@@ -475,16 +480,15 @@ func TestAddAndReadDataIndirectLarge(t *testing.T) {
 	fs.SetInodeAt(0, inode)
 
 	if true {
-		for i := 0; i < 10240; i++ {
+		for i := 0; i < 25*1024; i++ {
 			want := [myfilesystem.ClusterSize]byte{byte(i), 11, 12, 13, 14, 0, byte(i)}
-			logrus.SetLevel(logrus.ErrorLevel)
 			fs.AddDataToInode(want, fs.GetInodeAt(0), 0, i)
 
-			//got := fs.ReadDataFromInode(fs.GetInodeAt(0), i)
+			got := fs.ReadDataFromInode(fs.GetInodeAt(0), i)
 			//
-			//if want != got {
-			//	t.Errorf("tc=%d, want=%b, got=%b", i, want, got)
-			//}
+			if want != got {
+				t.Errorf("tc=%d, want=%b, got=%b", i, want, got)
+			}
 		}
 	}
 

@@ -11,7 +11,7 @@ import (
 func TestFindFreeCluster(t *testing.T) {
 	fs := myfilesystem.NewMyFileSystem("testfs")
 
-	fs.Format(1 * 1024 * 1024)
+	fs.Format(10 * 1024 * 1024)
 
 	for i := 0; i < int(fs.SuperBlock.ClusterCount); i++ {
 		id := fs.FindFreeClusterID()

@@ -47,8 +47,9 @@ func TestGetAndSet(t *testing.T) {
 	fs.Close()
 }
 
-func TestFindFreeBitsInBitmap(t *testing.T) {
-	ids := myfilesystem.FindFreeBitsInBitmap(16, []byte{0x0A, 0, 255, 0xD7})
+func TestFindFindFreeBitsInBytes(t *testing.T) {
+
+	ids := myfilesystem.FindFreeBitsInBytes(16, []byte{0x0A, 0, 255, 0xD7}, 0)
 
 	if len(ids) != 16 {
 		t.Fatalf("The size of found free bits should be 16. got=%d", len(ids))
@@ -104,4 +105,72 @@ func TestFindFreeBitsInBitmap(t *testing.T) {
 		t.Errorf("15th id should be 28, got=%d", ids[15])
 	}
 
+}
+
+func TestFindFreeBitsInBitmap(t *testing.T) {
+
+	fs := myfilesystem.NewMyFileSystem("testfs")
+	fs.Format(1 * 1024 * 1024)
+
+	fs.SetInBitmap(true, 16, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize())
+	ids := fs.FindFreeBitsInBitmap(18, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize(), fs.SuperBlock.ClusterCount)
+
+	if len(ids) != 18 {
+		t.Fatalf("The size of found free bits should be 17. got=%d", len(ids))
+	}
+
+	if ids[0] != 0 {
+		t.Errorf("0th id should be 0, got=%d", ids[0])
+	}
+	if ids[1] != 1 {
+		t.Errorf("1st id should be 1, got=%d", ids[1])
+	}
+	if ids[2] != 2 {
+		t.Errorf("2d id should be 2, got=%d", ids[2])
+	}
+	if ids[3] != 3 {
+		t.Errorf("3d id should be 3, got=%d", ids[3])
+	}
+	if ids[4] != 4 {
+		t.Errorf("4th id should be 5, got=%d", ids[4])
+	}
+	if ids[5] != 5 {
+		t.Errorf("5th id should be 7, got=%d", ids[5])
+	}
+
+	if ids[6] != 6 {
+		t.Errorf("6th id should be 8, got=%d", ids[6])
+	}
+	if ids[7] != 7 {
+		t.Errorf("7st id should be 9, got=%d", ids[7])
+	}
+	if ids[8] != 8 {
+		t.Errorf("8th id should be 10, got=%d", ids[8])
+	}
+	if ids[9] != 9 {
+		t.Errorf("9th id should be 11, got=%d", ids[9])
+	}
+	if ids[10] != 10 {
+		t.Errorf("10th id should be 12, got=%d", ids[10])
+	}
+	if ids[11] != 11 {
+		t.Errorf("11th id should be 13, got=%d", ids[11])
+	}
+	if ids[12] != 12 {
+		t.Errorf("12th id should be 14, got=%d", ids[12])
+	}
+	if ids[13] != 13 {
+		t.Errorf("13th id should be 15, got=%d", ids[13])
+	}
+	if ids[14] != 14 {
+		t.Errorf("14th id should be 26, got=%d", ids[14])
+	}
+	if ids[15] != 15 {
+		t.Errorf("15th id should be 28, got=%d", ids[15])
+	}
+	if ids[16] != 17 {
+		t.Errorf("16th id should be 17, got=%d", ids[16])
+	}
+
+	fs.Close()
 }

@@ -8,10 +8,12 @@ import (
 )
 
 type MyFileSystem struct {
-	filePath     string
-	File         *os.File
-	SuperBlock   SuperBlock
-	currentInode PseudoInode
+	filePath           string
+	File               *os.File
+	SuperBlock         SuperBlock
+	currentInode       PseudoInode
+	freeClusterIds     []ID
+	freeClusterIdIndex int
 }
 
 func (fs *MyFileSystem) Close() {

@@ -9,11 +9,27 @@ import (
 )
 
 func (fs *MyFileSystem) FindFreeClusterID() ID {
-	return fs.FindFreeBitInBitmap(fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterCount)
+	if fs.freeClusterIdIndex < len(fs.freeClusterIds)-1 {
+		id := fs.freeClusterIds[fs.freeClusterIdIndex]
+		//fs.freeClusterIds = append(fs.freeClusterIds[:0], fs.freeClusterIds[0+1:]...)
+		fs.freeClusterIdIndex++
+		return id
+	} else {
+		fs.freeClusterIds = fs.FindFreeBitsInBitmap(-1, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize(), fs.SuperBlock.ClusterCount)
+		fs.freeClusterIdIndex = 0
+
+		if len(fs.freeClusterIds) > 0 {
+			id := fs.freeClusterIds[0]
+			fs.freeClusterIdIndex++
+			return id
+		}
+	}
+	return -1
 }
 
 func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 	freeID := fs.FindFreeClusterID()
+	log.Infof("Free id=%d", freeID)
 	if freeID != -1 {
 		// mark in data block bitmap
 		fs.SetInBitmap(true, int32(freeID), fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize())
@@ -21,6 +37,8 @@ func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 		// write the actual inode at its address
 		fs.SetClusterAt(freeID, bytes)
 		return freeID
+	} else {
+		panic("Not found a free id")
 	}
 	log.Errorln("No free cluster found")
 	return -1
@@ -30,7 +48,7 @@ func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	clusterAddress := fs.GetClusterAddress(id)
 
 	log.Infof("SetClusterAt writing to address=%d for ID of %d", clusterAddress, id)
-	log.Debugf("written %b", data)
+	log.Infof("written %b", data)
 	_, err := fs.File.Seek(int64(clusterAddress), io.SeekStart)
 
 	if err == nil {
@@ -77,10 +95,10 @@ func (fs *MyFileSystem) GetClusterAddress(id ID) Address {
 	return fs.SuperBlock.ClusterStartAddress + Address(Size(id)*Size(ClusterSize))
 }
 
-func (fs MyFileSystem) GetCluster(id ID) Cluster {
+func (fs *MyFileSystem) GetCluster(id ID) Cluster {
 	clusterAddress := fs.GetClusterAddress(id)
 	return Cluster{
-		fs:      &fs,
+		fs:      fs,
 		id:      id,
 		address: clusterAddress,
 	}
