@@ -50,7 +50,7 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 
 func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Address, bitmapSize Size) byte {
 	if bitPosition >= int32(bitmapSize) {
-		panic(fmt.Sprintf("Trying to set a bit in outside of a bitmap position=%d, start address=%d, bitmapSize=%d", bitPosition, bitmapAddress, bitmapSize))
+		panic(fmt.Sprintf("Trying to set a bit in outside of a bitmap position=%d, Start address=%d, bitmapSize=%d", bitPosition, bitmapAddress, bitmapSize))
 	}
 
 	_, _ = fs.File.Seek(int64(bitmapAddress), io.SeekStart)
@@ -131,7 +131,7 @@ func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address,
 		read, err := fs.File.Read(bytes)
 		if err != nil {
 			log.Error(err)
-			log.Errorf("Could not read %d bytes", len(bytes))
+			log.Errorf("Could not read %d Bytes", len(bytes))
 			panic("Could not read")
 		}
 

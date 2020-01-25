@@ -16,7 +16,7 @@ const (
 )
 
 func (fs *MyFileSystem) Format(desiredFsSize int) {
-	log.Infof("About to format a volume of desiredFsSize %d bytes, %d kB, %d MB", desiredFsSize, desiredFsSize/ClusterSize, desiredFsSize/ClusterSize/ClusterSize)
+	log.Infof("About to format a volume of desiredFsSize %d Bytes, %d kB, %d MB", desiredFsSize, desiredFsSize/ClusterSize, desiredFsSize/ClusterSize/ClusterSize)
 
 	fs.SuperBlock = SuperBlock{
 		Signature:        [8]rune{'k', 'r', 'a', 'l', 's', 't'},

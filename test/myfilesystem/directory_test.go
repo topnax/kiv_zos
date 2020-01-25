@@ -3,27 +3,67 @@ package myfilesystem
 import (
 	"kiv_zos/myfilesystem"
 	"testing"
-	"unsafe"
 )
 
-func TestSomething(t *testing.T) {
-	ds := 20 * unsafe.Sizeof(myfilesystem.DirectoryItem{})
-	t.Errorf("Total size: %d", ds)
-	t.Errorf("Sizeof DI: %d", unsafe.Sizeof(myfilesystem.DirectoryItem{}))
-	t.Errorf("Clustersize: %d", myfilesystem.ClusterSize)
-	t.Errorf("%d", ds/myfilesystem.ClusterSize)
-	t.Errorf("%d", ds%myfilesystem.ClusterSize)
-	cond := (ds%myfilesystem.ClusterSize) < unsafe.Sizeof(myfilesystem.DirectoryItem{}) && ds%myfilesystem.ClusterSize != 0
-	t.Errorf("%v", cond)
-
-	if cond {
-
-		taken := (myfilesystem.ClusterSize / unsafe.Sizeof(myfilesystem.DirectoryItem{})) * unsafe.Sizeof(myfilesystem.DirectoryItem{})
-		t.Errorf("Start at %d", taken)
-		t.Errorf("Read %d", myfilesystem.ClusterSize-taken)
-		t.Errorf("Then at next %d", ds%myfilesystem.ClusterSize)
+func TestSimpleReadOrder(t *testing.T) {
+	want := myfilesystem.ReadOrder{
+		ClusterId: 0,
+		Start:     0,
+		Bytes:     24,
 	}
-	//if false {
-	//	t.Error(unsafe.Sizeof(myfilesystem.DirectoryItem{}))
-	//}
+	got := myfilesystem.GetReadOrder(0, 24)[0]
+	if got != want {
+		t.Errorf("Simple read order failed want=%v, got=%d", want, got)
+	}
+
+	want = myfilesystem.ReadOrder{
+		ClusterId: 1,
+		Start:     0,
+		Bytes:     24,
+	}
+
+	got = myfilesystem.GetReadOrder(1024, 24)[0]
+	if got != want {
+		t.Errorf("Simple read order failed want=%v, got=%d", want, got)
+	}
+
+	want = myfilesystem.ReadOrder{
+		ClusterId: 1,
+		Start:     24,
+		Bytes:     24,
+	}
+	got = myfilesystem.GetReadOrder(1024+24, 24)[0]
+	if got != want {
+		t.Errorf("Simple read order failed want=%v, got=%d", want, got)
+	}
+}
+
+func TestSimpleReadOrder2(t *testing.T) {
+	want := []myfilesystem.ReadOrder{{
+		ClusterId: 0,
+		Start:     1020,
+		Bytes:     4,
+	}, {
+		ClusterId: 1,
+		Start:     0,
+		Bytes:     5,
+	}}
+	got := myfilesystem.GetReadOrder(1020, 9)
+	if got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("Simple read order failed want=%v, got=%d", want, got)
+	}
+
+	want = []myfilesystem.ReadOrder{{
+		ClusterId: 1,
+		Start:     2000 - myfilesystem.ClusterSize,
+		Bytes:     48,
+	}, {
+		ClusterId: 2,
+		Start:     0,
+		Bytes:     52,
+	}}
+	got = myfilesystem.GetReadOrder(2000, 100)
+	if got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("Simple read order failed want=%v, got=%d", want, got)
+	}
 }

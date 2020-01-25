@@ -33,10 +33,10 @@ func (superBlock SuperBlock) info() {
 	log.Infoln("ClusterSize:", superBlock.ClusterSize)
 	log.Infoln("ClusterCount:", superBlock.ClusterCount)
 	log.Infoln("DiskSize:", superBlock.DiskSize)
-	log.Infoln("Inode bitmap start address:", superBlock.InodeBitmapStartAddress)
-	log.Infoln("Inode start address:", superBlock.InodeStartAddress)
-	log.Infoln("Cluster bitmap start address:", superBlock.ClusterBitmapStartAddress)
-	log.Infoln("Clust er start address:", superBlock.ClusterStartAddress)
+	log.Infoln("Inode bitmap Start address:", superBlock.InodeBitmapStartAddress)
+	log.Infoln("Inode Start address:", superBlock.InodeStartAddress)
+	log.Infoln("Cluster bitmap Start address:", superBlock.ClusterBitmapStartAddress)
+	log.Infoln("Clust er Start address:", superBlock.ClusterStartAddress)
 }
 
 func (superBlock SuperBlock) InodeCount() Size {

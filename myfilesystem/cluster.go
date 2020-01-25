@@ -110,7 +110,7 @@ func (cluster Cluster) WriteId(id ID, idIndex ID) {
 
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprint("could not seek to start of cluster of ID %d", cluster.id))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d", cluster.id))
 	}
 
 	_, err = cluster.fs.File.Seek(int64(unsafe.Sizeof(ID(0)))*int64(idIndex), io.SeekCurrent)
@@ -136,7 +136,7 @@ func (cluster Cluster) WriteAddress(address Address, addressId ID) {
 
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprint("could not seek to start of cluster of ID %d", cluster.id))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d", cluster.id))
 	}
 
 	_, err = cluster.fs.File.Seek(int64(unsafe.Sizeof(Address(0)))*int64(addressId), io.SeekCurrent)
@@ -159,7 +159,7 @@ func (cluster *Cluster) WriteData(data [ClusterSize]byte) {
 
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprint("could not seek to start of cluster of ID %d", cluster.id))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d", cluster.id))
 	}
 
 	_, err = cluster.fs.File.Write(data[:])
@@ -175,7 +175,7 @@ func (cluster Cluster) ReadData() [ClusterSize]byte {
 
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprint("could not seek to start of cluster of ID %d", cluster.id))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d", cluster.id))
 	}
 
 	var data [ClusterSize]byte
@@ -194,14 +194,14 @@ func (cluster Cluster) ReadAddress(index ID) Address {
 	log.Infof("ReadAddress seeking to: %d", cluster.address)
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprintf("could not seek to start of cluster of ID %d", cluster.id))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d", cluster.id))
 	}
 
 	_, err = cluster.fs.File.Seek(int64(unsafe.Sizeof(Address(0)))*int64(index), io.SeekCurrent)
 
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprintf("could not seek to start of cluster of ID %d and indirect index of =%d", cluster.id, index))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d and indirect index of =%d", cluster.id, index))
 	}
 
 	var foundId Address
@@ -220,14 +220,14 @@ func (cluster Cluster) ReadId(index ID) ID {
 	log.Infof("ReadId seeking to: %d", cluster.address)
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprintf("could not seek to start of cluster of ID %d", cluster.id))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d", cluster.id))
 	}
 
 	_, err = cluster.fs.File.Seek(int64(unsafe.Sizeof(ID(0)))*int64(index), io.SeekCurrent)
 
 	if err != nil {
 		log.Error(err)
-		panic(fmt.Sprintf("could not seek to start of cluster of ID %d and index of =%d", cluster.id, index))
+		panic(fmt.Sprintf("could not seek to Start of cluster of ID %d and index of =%d", cluster.id, index))
 	}
 
 	var foundId ID

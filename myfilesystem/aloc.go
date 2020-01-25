@@ -28,6 +28,10 @@ func (fs *MyFileSystem) GetClusterPath(id int) (int, int) {
 	}
 }
 
+func (fs *MyFileSystem) ReadDataFromInodeFrom(inode PseudoInode, address Address, read int) []byte {
+	return []byte{}
+}
+
 func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode, clusterId int) [ClusterSize]byte {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 
