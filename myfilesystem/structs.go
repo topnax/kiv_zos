@@ -2,6 +2,7 @@ package myfilesystem
 
 import (
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"unsafe"
 )
 
@@ -67,6 +68,12 @@ type PseudoInode struct {
 type DirectoryItem struct {
 	NodeID ID
 	Name   [maxFileNameLength]rune
+}
+
+func (dirItem DirectoryItem) GetName() string {
+	str := string(dirItem.Name[:])
+	str = strings.Replace(str, string(byte(0)), "", -1)
+	return str
 }
 
 type Cluster struct {

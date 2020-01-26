@@ -538,3 +538,33 @@ func TestShrinkData(t *testing.T) {
 
 	fs.Close()
 }
+
+func TestGetUsedClusterAddresses(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddInode(myfilesystem.PseudoInode{})
+	dirItem := myfilesystem.DirectoryItem{
+		NodeID: 99,
+		Name:   [12]rune{'s', 'o', 'u', 'b'},
+	}
+	inode := fs.GetInodeAt(id)
+	var addresses []myfilesystem.Address
+	for i := 0; i < 15; i++ {
+		addresses = append(addresses, fs.GetClusterAddress(fs.AddDataToInode([myfilesystem.ClusterSize]byte{1, 1, 123, 1, 1}, &inode, 0, i)))
+	}
+	inode.FileSize = myfilesystem.Size(15 * myfilesystem.ClusterSize)
+
+	got := fs.GetUsedClusterAddresses(inode)
+
+	for index, address := range addresses {
+		if got[index] != address {
+			t.Errorf("UsedClusterAddresses failed. Want=%d, got=%d", address, got[index])
+		}
+	}
+
+	fs.PrintInfo(inode, dirItem)
+
+	fs.Close()
+}

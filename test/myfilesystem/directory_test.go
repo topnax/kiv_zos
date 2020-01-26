@@ -192,7 +192,6 @@ func TestAddDirectoryItems(t *testing.T) {
 
 func TestRemoveDirectoryItems(t *testing.T) {
 	fs := myfilesystem.NewMyFileSystem("testfs")
-
 	fs.Format(1 * 1024 * 1024)
 
 	nodeId := fs.AddInode(myfilesystem.PseudoInode{
@@ -276,4 +275,51 @@ func TestRemoveDirectoryItems(t *testing.T) {
 	if items[2] != dirItem3 {
 		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem3, items[2])
 	}
+	fs.Close()
+}
+
+func TestListDirectoryItems(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+	fs.Format(1 * 1024 * 1024)
+
+	rootId := fs.AddInode(myfilesystem.PseudoInode{
+		IsDirectory: true,
+	})
+
+	dirId := fs.AddInode(myfilesystem.PseudoInode{
+		IsDirectory: false,
+	})
+	dirItem := myfilesystem.DirectoryItem{
+		NodeID: dirId,
+		Name:   [12]rune{'t', 'e', 'x', 't'},
+	}
+
+	dirId = fs.AddInode(myfilesystem.PseudoInode{
+		IsDirectory: false,
+	})
+	dirItem2 := myfilesystem.DirectoryItem{
+		NodeID: dirId,
+		Name:   [12]rune{'k', 'n', 'i', 'h', 'a'},
+	}
+
+	dirId = fs.AddInode(myfilesystem.PseudoInode{
+		IsDirectory: true,
+	})
+	dirItem3 := myfilesystem.DirectoryItem{
+		NodeID: dirId,
+		Name:   [12]rune{'p', 'd', 'f', 'k', 'a'},
+	}
+
+	fs.AddDirItem(dirItem, rootId)
+	fs.AddDirItem(dirItem2, rootId)
+	fs.AddDirItem(dirItem3, rootId)
+
+	rootDirItem := myfilesystem.DirectoryItem{
+		NodeID: rootId,
+		Name:   [12]rune{'s', 'l', 'o', 'z', 'k', 'a'},
+	}
+
+	fs.ListDirectory(rootId, rootDirItem)
+
+	fs.PrintInfo(fs.GetInodeAt(rootId), rootDirItem)
 }

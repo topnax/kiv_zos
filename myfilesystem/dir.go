@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"kiv_zos/utils"
 	"unsafe"
 )
 
@@ -185,4 +186,38 @@ func ItemsToBytes(items []DirectoryItem) []byte {
 	}
 
 	return dirItemBytes
+}
+
+func (fs MyFileSystem) ListDirectory(nodeId ID, item DirectoryItem) {
+	node := fs.GetInodeAt(nodeId)
+	if node.IsDirectory {
+		utils.PrintSuccess(fmt.Sprintf("Items of %s", item.GetName()))
+		items := fs.ReadDirItems(nodeId)
+
+		for _, item := range items {
+			node = fs.GetInodeAt(item.NodeID)
+			var char string
+			if node.IsDirectory {
+				char = "+"
+			} else {
+				char = "-"
+			}
+
+			fmt.Printf("%s%s\n", char, item.GetName())
+		}
+
+		for _, item := range items {
+			node = fs.GetInodeAt(item.NodeID)
+			var char string
+			if node.IsDirectory {
+				char = "+"
+			} else {
+				char = "-"
+			}
+
+			fmt.Printf("%s%s\n", char, item.GetName())
+		}
+	} else {
+		utils.PrintError(fmt.Sprintf("%s is not a directory", item.GetName()))
+	}
 }

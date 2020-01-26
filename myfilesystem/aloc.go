@@ -28,22 +28,32 @@ func (fs *MyFileSystem) GetClusterPath(id int) (int, int) {
 	}
 }
 
-func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode) []byte {
+func (fs *MyFileSystem) ReadDataFromInodeFx(inode PseudoInode, fx func(data []byte)) []byte {
 	bytes := []byte{}
 
 	clusters := inode.FileSize / ClusterSize
 
 	for i := 0; Size(i) < clusters; i++ {
 		read := fs.ReadDataFromInodeAt(inode, i)
-		bytes = append(bytes, read[:]...)
+		fx(read[:])
 	}
 
 	remainder := inode.FileSize % ClusterSize
 
 	if remainder > 0 {
 		read := fs.ReadDataFromInodeAt(inode, int(clusters))
-		bytes = append(bytes, read[:remainder]...)
+		fx(read[:remainder])
 	}
+
+	return bytes
+}
+
+func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode) []byte {
+	bytes := []byte{}
+
+	fs.ReadDataFromInodeFx(inode, func(data []byte) {
+		bytes = append(bytes, data...)
+	})
 
 	return bytes
 }
@@ -272,4 +282,13 @@ func GetClusterCountToBeRemoved(currentSize Size, targetSize Size) int {
 	tgtCount := GetUsedClusterCount(targetSize)
 
 	return int(currCount - tgtCount)
+}
+
+func (fs MyFileSystem) GetUsedClusterAddresses(inode PseudoInode) []Address {
+	var ids []Address
+	count := GetUsedClusterCount(inode.FileSize)
+	for i := 0; i < int(count); i++ {
+		ids = append(ids, fs.GetClusterAddressByIndex(inode, i))
+	}
+	return ids
 }
