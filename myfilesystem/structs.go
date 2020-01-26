@@ -65,8 +65,8 @@ type PseudoInode struct {
 }
 
 type DirectoryItem struct {
-	nodeID ID
-	name   [maxFileNameLength]rune
+	NodeID ID
+	Name   [maxFileNameLength]rune
 }
 
 type Cluster struct {

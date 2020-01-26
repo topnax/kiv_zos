@@ -28,11 +28,75 @@ func (fs *MyFileSystem) GetClusterPath(id int) (int, int) {
 	}
 }
 
-func (fs *MyFileSystem) ReadDataFromInodeFrom(inode PseudoInode, address Address, read int) []byte {
-	return []byte{}
+func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode) []byte {
+	bytes := []byte{}
+
+	clusters := inode.FileSize / ClusterSize
+
+	for i := 0; Size(i) < clusters; i++ {
+		read := fs.ReadDataFromInodeAt(inode, i)
+		bytes = append(bytes, read[:]...)
+	}
+
+	remainder := inode.FileSize % ClusterSize
+
+	if remainder > 0 {
+		read := fs.ReadDataFromInodeAt(inode, int(clusters))
+		bytes = append(bytes, read[:remainder]...)
+	}
+
+	return bytes
 }
 
-func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode, clusterId int) [ClusterSize]byte {
+func (fs *MyFileSystem) WriteDataToInode(inodeId ID, data []byte) {
+
+	inode := fs.GetInodeAt(inodeId)
+
+	clusters := len(data) / ClusterSize
+
+	for i := 0; i < clusters; i++ {
+		var bytes [ClusterSize]byte
+		copy(bytes[:], data[i*ClusterSize:(i+1)*ClusterSize])
+		fs.AddDataToInode(bytes, &inode, inodeId, i)
+		logrus.Infof("#%d, inode=%v", i, inode)
+		logrus.Infof("dir1=%v", inode.Direct1)
+		logrus.Infof("dir2=%v", inode.Direct2)
+	}
+
+	remainder := len(data) % ClusterSize
+
+	if remainder > 0 {
+		var bytes [ClusterSize]byte
+		copy(bytes[:], data[clusters*ClusterSize:(clusters*ClusterSize)+remainder])
+		fs.AddDataToInode(bytes, &inode, inodeId, clusters)
+	}
+
+	inode = fs.GetInodeAt(inodeId)
+
+	inode.FileSize = Size(len(data))
+
+	logrus.Infof("inode=%v", inode)
+	logrus.Infof("dir1=%v", inode.Direct1)
+	logrus.Infof("dir2=%v", inode.Direct2)
+
+	fs.SetInodeAt(inodeId, inode)
+}
+
+func (fs *MyFileSystem) ReadDataFromInodeAt(inode PseudoInode, clusterId int) [ClusterSize]byte {
+	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
+
+	if indirectIndex == NoIndirect {
+		return fs.ReadFromDirect(inode, clusterIndex)
+	} else if indirectIndex == FirstIndirect {
+		return fs.ReadFromFirstIndirect(inode, clusterIndex)
+	} else if indirectIndex != FileTooLarge {
+		return fs.ReadFromSecondIndirect(inode, clusterIndex, indirectIndex)
+	} else {
+		panic("Could not read out of the bounds")
+	}
+}
+
+func (fs *MyFileSystem) GetClusterByIndex(inode PseudoInode, clusterId int) [ClusterSize]byte {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 
 	if indirectIndex == NoIndirect {
@@ -66,25 +130,26 @@ func (fs *MyFileSystem) ReadFromSecondIndirect(inode PseudoInode, clusterIndex i
 	return fs.GetClusterDataAtAddress(fs.GetCluster(fs.GetCluster(inode.Indirect2).ReadId(ID(indirectIndex))).ReadAddress(ID(clusterIndex)))
 }
 
-func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode PseudoInode, inodeId ID, clusterId int) ID {
+func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode *PseudoInode, inodeId ID, clusterId int) ID {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 	logrus.Infof("StartAddData Inode Indirect1 addr %d", inode.Indirect1)
 	logrus.Infof("clusterIndex, indirectIndex %d <=> %d", clusterIndex, indirectIndex)
 	result := ID(-1)
 	if indirectIndex == NoIndirect {
-		result = fs.WriteToDirect(&inode, clusterIndex, data)
+		result = fs.WriteToDirect(inode, clusterIndex, data)
 	} else if indirectIndex == FirstIndirect {
-		result = fs.WriteDataToTheFirstIndirectCluster(&inode, clusterIndex, data)
+		result = fs.WriteDataToTheFirstIndirectCluster(inode, clusterIndex, data)
 	} else if indirectIndex != FileTooLarge {
-		result = fs.WriteDataToSecondIndirectCluster(&inode, clusterIndex, indirectIndex, data)
+		result = fs.WriteDataToSecondIndirectCluster(inode, clusterIndex, indirectIndex, data)
 	} else {
 		return -1
 	}
+	logrus.Infof("EndAddData Inode Direct addr %d", inode.Indirect1)
 	logrus.Infof("EndAddData Inode Indirect1 addr %d", inode.Indirect1)
 	logrus.Infof("EndAddData Inode Indirect2 addr %d", inode.Indirect2)
 	logrus.Infof("EndAddData Inode Indirect2 id %d", inodeId)
 	if indirectIndex == NoIndirect || (indirectIndex == FirstIndirect && clusterIndex == 0) || (indirectIndex == 0 || clusterIndex == 0) {
-		fs.SetInodeAt(inodeId, inode)
+		fs.SetInodeAt(inodeId, *inode)
 	}
 	logrus.Infof("EndAddData ReadInode Indirect2 id %d", fs.GetInodeAt(inodeId).Indirect2)
 	return result

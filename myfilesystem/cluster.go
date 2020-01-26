@@ -154,8 +154,11 @@ func (cluster Cluster) WriteAddress(address Address, addressId ID) {
 	}
 }
 
-func (cluster *Cluster) WriteData(data [ClusterSize]byte) {
-	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
+func (cluster *Cluster) WriteDataOffset(data []byte, offset int) {
+	if len(data)+offset > ClusterSize {
+		panic("Cannot write... Data + offset > ClusterSize")
+	}
+	_, err := cluster.fs.File.Seek(int64(cluster.address)+int64(offset), io.SeekStart)
 
 	if err != nil {
 		log.Error(err)
@@ -168,6 +171,10 @@ func (cluster *Cluster) WriteData(data [ClusterSize]byte) {
 		log.Error(err)
 		panic(fmt.Sprint("could not write"))
 	}
+}
+
+func (cluster *Cluster) WriteData(data [ClusterSize]byte) {
+	cluster.WriteDataOffset(data[:], 0)
 }
 
 func (cluster Cluster) ReadData() [ClusterSize]byte {
