@@ -208,3 +208,19 @@ func TestSetAndReadAddress(t *testing.T) {
 
 	fs.Close()
 }
+
+func TestGetIdByAddress(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	for i := 0; i < 50; i++ {
+		want := fs.AddCluster([myfilesystem.ClusterSize]byte{})
+		got := fs.GetClusterId(fs.GetClusterAddress(want))
+		if got != want {
+			t.Errorf("Address to ID conversion failed. Want=%d, got=%d", want, got)
+		}
+	}
+
+	fs.Close()
+}

@@ -87,12 +87,16 @@ func (fs *MyFileSystem) GetClusterDataAtAddress(address Address) [ClusterSize]by
 }
 
 func (fs *MyFileSystem) ClearClusterById(id ID) {
-	clusterAddress := fs.GetClusterAddress(id)
-	fs.SetInBitmap(false, int32(id), clusterAddress, fs.SuperBlock.ClusterBitmapSize())
+	//clusterAddress := fs.GetClusterAddress(id)
+	fs.SetInBitmap(false, int32(id), fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize())
 }
 
 func (fs *MyFileSystem) GetClusterAddress(id ID) Address {
 	return fs.SuperBlock.ClusterStartAddress + Address(Size(id)*Size(ClusterSize))
+}
+
+func (fs *MyFileSystem) GetClusterId(address Address) ID {
+	return ID((address - fs.SuperBlock.ClusterStartAddress) / Address(ClusterSize))
 }
 
 func (fs *MyFileSystem) GetCluster(id ID) Cluster {
@@ -246,4 +250,13 @@ func (cluster Cluster) ReadId(index ID) ID {
 	}
 
 	return foundId
+}
+
+func GetUsedClusterCount(size Size) Size {
+	currCount := size / ClusterSize
+	currRemainder := size % ClusterSize
+	if currRemainder > 0 {
+		currCount++
+	}
+	return currCount
 }

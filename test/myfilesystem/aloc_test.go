@@ -483,3 +483,58 @@ func TestWriteDataToInode(t *testing.T) {
 
 	fs.Close()
 }
+
+func TestGetClusterIdsToBeRemoved(t *testing.T) {
+	got := myfilesystem.GetClusterCountToBeRemoved((myfilesystem.ClusterSize)+40, (myfilesystem.ClusterSize))
+	want := 1
+
+	if got != want {
+		t.Errorf("Got incorrect cluster cound to be removed. Want=%d, got=%d", want, got)
+	}
+}
+
+func TestGetClusterIdsToBeRemoved2(t *testing.T) {
+	got := myfilesystem.GetClusterCountToBeRemoved((myfilesystem.ClusterSize)*5+40, myfilesystem.ClusterSize*2+500)
+	want := 3
+
+	if got != want {
+		t.Errorf("Got incorrect cluster cound to be removed. Want=%d, got=%d", want, got)
+	}
+}
+
+func TestGetClusterIdsToBeRemoved3(t *testing.T) {
+	got := myfilesystem.GetClusterCountToBeRemoved((myfilesystem.ClusterSize)*5+500, myfilesystem.ClusterSize*5+10)
+	want := 0
+
+	if got != want {
+		t.Errorf("Got incorrect cluster cound to be removed. Want=%d, got=%d", want, got)
+	}
+}
+
+func TestShrinkData(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddInode(myfilesystem.PseudoInode{})
+
+	var want []byte
+
+	for i := 0; i < 2500; i++ {
+		want = append(want, byte(i%255))
+	}
+
+	fs.WriteDataToInode(id, want)
+
+	node := fs.GetInodeAt(id)
+
+	fs.ShrinkInodeData(&node, id, 2000)
+
+	fs.FindFreeClusterID()
+
+	if fs.GetInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+		t.Errorf("The second cluster ID should be free")
+	}
+
+	fs.Close()
+}

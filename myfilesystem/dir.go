@@ -124,6 +124,33 @@ func (fs *MyFileSystem) AppendDirItem(item DirectoryItem, node PseudoInode, node
 	return -1
 }
 
+func (fs *MyFileSystem) RemoveDirItem(delete DirectoryItem, nodeId ID) bool {
+	items := fs.ReadDirItems(nodeId)
+	deleteIndex := -1
+	for index, item := range items {
+		// find delete to be deleted
+		if item.Name == delete.Name {
+			deleteIndex = index
+			break
+		}
+	}
+	if deleteIndex == -1 {
+		return false
+	}
+
+	if deleteIndex != len(items)-1 {
+		items[deleteIndex] = items[len(items)-1]
+	}
+
+	items = items[:len(items)-1]
+
+	fs.WriteDataToInode(nodeId, ItemsToBytes(items))
+	node := fs.GetInodeAt(nodeId)
+	fs.ShrinkInodeData(&node, nodeId, Size(len(items)*int(unsafe.Sizeof(DirectoryItem{}))))
+
+	return true
+}
+
 func NextDirItemIndex(node PseudoInode) ID {
 	if node.FileSize == 0 {
 		return 0
@@ -133,4 +160,29 @@ func NextDirItemIndex(node PseudoInode) ID {
 
 func (fs MyFileSystem) GetDirItemsCount(node PseudoInode) Size {
 	return node.FileSize / Size(unsafe.Sizeof(DirectoryItem{}))
+}
+
+func ItemsToBytes(items []DirectoryItem) []byte {
+	if len(items) <= 0 {
+		log.Errorf("Trying to convert empty item array to bytes")
+		return []byte{}
+	}
+
+	buf := new(bytes.Buffer)
+	for _, item := range items {
+		err := binary.Write(buf, binary.LittleEndian, item)
+		if err != nil {
+			fmt.Println("binary.Write failed:", err)
+			panic(err)
+		}
+	}
+
+	dirItemBytes := make([]byte, int(unsafe.Sizeof(items[0]))*len(items))
+	_, err := buf.Read(dirItemBytes)
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
+
+	return dirItemBytes
 }

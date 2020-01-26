@@ -189,3 +189,91 @@ func TestAddDirectoryItems(t *testing.T) {
 		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem3, dirItems[21])
 	}
 }
+
+func TestRemoveDirectoryItems(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	nodeId := fs.AddInode(myfilesystem.PseudoInode{
+		IsDirectory: true,
+	})
+
+	dirItem := myfilesystem.DirectoryItem{
+		NodeID: 2,
+		Name:   [12]rune{'H', 'E', 'L', 'L', 'O'},
+	}
+
+	dirItem2 := myfilesystem.DirectoryItem{
+		NodeID: 3,
+		Name:   [12]rune{'H', 'i', 'c', 'u', 'p'},
+	}
+	dirItem3 := myfilesystem.DirectoryItem{
+		NodeID: 4,
+		Name:   [12]rune{'1', 'i', 'c', 'S', 'B', 'Z'},
+	}
+	dirItem4 := myfilesystem.DirectoryItem{
+		NodeID: 5,
+		Name:   [12]rune{'2', 'r', 'x', 's', 'W', 'Z'},
+	}
+
+	fs.AddDirItem(dirItem, nodeId)
+	fs.AddDirItem(dirItem2, nodeId)
+	fs.AddDirItem(dirItem3, nodeId)
+
+	fs.RemoveDirItem(dirItem3, nodeId)
+
+	items := fs.ReadDirItems(nodeId)
+
+	if len(items) != 2 {
+		t.Fatalf("The items length should be 2. got=%d", len(items))
+	}
+
+	if items[0] != dirItem {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem, items[0])
+	}
+
+	if items[1] != dirItem2 {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem2, items[1])
+	}
+
+	fs.AddDirItem(dirItem3, nodeId)
+
+	items = fs.ReadDirItems(nodeId)
+
+	if len(items) != 3 {
+		t.Fatalf("The items length should be 3. got=%d", len(items))
+	}
+
+	if items[0] != dirItem {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem, items[0])
+	}
+
+	if items[1] != dirItem2 {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem2, items[1])
+	}
+
+	if items[2] != dirItem3 {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem3, items[2])
+	}
+
+	fs.AddDirItem(dirItem4, nodeId)
+	fs.RemoveDirItem(dirItem2, nodeId)
+	items = fs.ReadDirItems(nodeId)
+
+	if len(items) != 3 {
+		t.Fatalf("The items length should be 2. got=%d", len(items))
+	}
+
+	if items[0] != dirItem {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem, items[0])
+	}
+
+	if items[1] != dirItem4 {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem4, items[1])
+	}
+
+	if items[2] != dirItem3 {
+		t.Errorf("Read incorrect diritem. Want=%v, got=%v", dirItem3, items[2])
+	}
+}

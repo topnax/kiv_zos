@@ -96,21 +96,25 @@ func (fs *MyFileSystem) ReadDataFromInodeAt(inode PseudoInode, clusterId int) [C
 	}
 }
 
-func (fs *MyFileSystem) GetClusterByIndex(inode PseudoInode, clusterId int) [ClusterSize]byte {
+func (fs *MyFileSystem) GetClusterAddressByIndex(inode PseudoInode, clusterId int) Address {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 
 	if indirectIndex == NoIndirect {
-		return fs.ReadFromDirect(inode, clusterIndex)
+		return fs.GetDirectClusterAddressByIndex(inode, clusterIndex)
 	} else if indirectIndex == FirstIndirect {
-		return fs.ReadFromFirstIndirect(inode, clusterIndex)
+		return fs.GetIndirectClusterAddressByIndex(inode, clusterIndex)
 	} else if indirectIndex != FileTooLarge {
-		return fs.ReadFromSecondIndirect(inode, clusterIndex, indirectIndex)
+		return fs.GetSecondIndirectClusterAddressByIndex(inode, clusterIndex, indirectIndex)
 	} else {
 		panic("Could not read out of the bounds")
 	}
 }
 
 func (fs *MyFileSystem) ReadFromDirect(inode PseudoInode, clusterIndex int) [ClusterSize]byte {
+	return fs.GetClusterDataAtAddress(fs.GetDirectClusterAddressByIndex(inode, clusterIndex))
+}
+
+func (fs *MyFileSystem) GetDirectClusterAddressByIndex(inode PseudoInode, clusterIndex int) Address {
 	inodeDirectPtrs := []Address{
 		inode.Direct1,
 		inode.Direct2,
@@ -119,15 +123,23 @@ func (fs *MyFileSystem) ReadFromDirect(inode PseudoInode, clusterIndex int) [Clu
 		inode.Direct5,
 	}
 
-	return fs.GetClusterDataAtAddress(inodeDirectPtrs[clusterIndex])
+	return inodeDirectPtrs[clusterIndex]
 }
 
 func (fs *MyFileSystem) ReadFromFirstIndirect(inode PseudoInode, clusterIndex int) [ClusterSize]byte {
-	return fs.GetClusterDataAtAddress(fs.GetCluster(inode.Indirect1).ReadAddress(ID(clusterIndex)))
+	return fs.GetClusterDataAtAddress(fs.GetIndirectClusterAddressByIndex(inode, clusterIndex))
+}
+
+func (fs *MyFileSystem) GetIndirectClusterAddressByIndex(inode PseudoInode, clusterIndex int) Address {
+	return fs.GetCluster(inode.Indirect1).ReadAddress(ID(clusterIndex))
 }
 
 func (fs *MyFileSystem) ReadFromSecondIndirect(inode PseudoInode, clusterIndex int, indirectIndex int) [ClusterSize]byte {
-	return fs.GetClusterDataAtAddress(fs.GetCluster(fs.GetCluster(inode.Indirect2).ReadId(ID(indirectIndex))).ReadAddress(ID(clusterIndex)))
+	return fs.GetClusterDataAtAddress(fs.GetSecondIndirectClusterAddressByIndex(inode, indirectIndex, clusterIndex))
+}
+
+func (fs *MyFileSystem) GetSecondIndirectClusterAddressByIndex(inode PseudoInode, indirectIndex int, clusterIndex int) Address {
+	return fs.GetCluster(fs.GetCluster(inode.Indirect2).ReadId(ID(indirectIndex))).ReadAddress(ID(clusterIndex))
 }
 
 func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode *PseudoInode, inodeId ID, clusterId int) ID {
@@ -243,4 +255,21 @@ func (fs *MyFileSystem) WriteDataToSecondIndirectCluster(inode *PseudoInode, clu
 	logrus.Infof("IndirectCluster ID is %d", indirectCluster.id)
 
 	return fs.WriteDataToIndirectCluster(indirectCluster, clusterIndex, data)
+}
+
+func (fs *MyFileSystem) ShrinkInodeData(inode *PseudoInode, inodeId ID, desiredSize Size) {
+	tbr := GetClusterCountToBeRemoved(inode.FileSize, desiredSize)
+	clusterCount := GetUsedClusterCount(inode.FileSize)
+	for i := 0; i < tbr; i++ {
+		address := fs.GetClusterAddressByIndex(*inode, int(clusterCount)-i-1)
+		fs.ClearClusterById(fs.GetClusterId(address))
+	}
+}
+
+func GetClusterCountToBeRemoved(currentSize Size, targetSize Size) int {
+	currCount := GetUsedClusterCount(currentSize)
+
+	tgtCount := GetUsedClusterCount(targetSize)
+
+	return int(currCount - tgtCount)
 }
