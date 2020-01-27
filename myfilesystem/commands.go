@@ -31,16 +31,16 @@ func (fs *MyFileSystem) PrintCurrentPath() {
 
 func (fs *MyFileSystem) CreateNewDirectory(name string) {
 	dirNames := GetDirNames(name)
-	if len(dirNames) > 1 {
-		dirName := dirNames[len(dirNames)-1]
-		fs.VisitDirectoryByNamesAndExecute(dirNames[:len(dirNames)-1], func() {
+	dirName := dirNames[len(dirNames)-1]
+	fs.VisitDirectoryByNamesAndExecute(dirNames[:len(dirNames)-1], func() {
+		if len(dirNames) == 0 {
+			fs.NewDirectory(fs.currentInodeID, name, false)
+		} else {
 			fs.NewDirectory(fs.currentInodeID, dirName, false)
-		}, func() {
-			utils.PrintError(fmt.Sprintf("Cannot create folder '%s' at '%s/' because such path does not exist", dirName, strings.Join(dirNames[:len(dirNames)-1], "/")))
-		})
-	} else {
-		fs.NewDirectory(fs.currentInodeID, name, false)
-	}
+		}
+	}, func() {
+		utils.PrintError(fmt.Sprintf("Cannot create folder '%s' at '%s/' because such path does not exist", dirName, strings.Join(dirNames[:len(dirNames)-1], "/")))
+	})
 }
 
 func (fs MyFileSystem) ListDirectoryContent(name string) {
@@ -59,6 +59,10 @@ func (fs MyFileSystem) ListDirectoryContent(name string) {
 }
 
 func (fs *MyFileSystem) ChangeDirectory(path string) {
+	if path == FolderSeparator {
+		fs.ChangeToDirectoryByName(path)
+		return
+	}
 	if !fs.ChangeToDirectoryByPath(path) {
 		utils.PrintError(fmt.Sprintf("'%s' not found", path))
 	}
