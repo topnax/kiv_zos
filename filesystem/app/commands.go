@@ -16,6 +16,9 @@ var (
 	rmCommand = fsApp.Command("rm", "Removes a file")
 	rmTarget  = rmCommand.Arg("target", "Target").Required().String()
 
+	rmDirCommand = fsApp.Command("rmdir", "Removes a directory, but only, if it's empty")
+	rmDirTarget  = rmDirCommand.Arg("target", "Target").Required().String()
+
 	mkdirCommand = fsApp.Command("mkdir", "Creates a directory")
 	mkdirDirName = mkdirCommand.Arg("dirname", "Directory name").Required().String()
 

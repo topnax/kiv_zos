@@ -530,8 +530,40 @@ func TestShrinkData(t *testing.T) {
 
 	fs.ShrinkInodeData(&node, id, 2000)
 
-	if fs.GetInBitmap(2+3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if fs.GetInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("The second cluster ID should be free")
+	}
+
+	fs.Close()
+}
+
+func TestShrinkDataWhole(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+
+	fs.Format(1 * 1024 * 1024)
+
+	id := fs.AddInode(myfilesystem.PseudoInode{})
+
+	var want []byte
+
+	for i := 0; i < 2500; i++ {
+		want = append(want, byte(i%255))
+	}
+
+	fs.WriteDataToInode(id, want)
+
+	node := fs.GetInodeAt(id)
+
+	fs.ShrinkInodeData(&node, id, 0)
+
+	if fs.GetInBitmap(0, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+		t.Errorf("The first cluster ID should be free")
+	}
+	if fs.GetInBitmap(1, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+		t.Errorf("The second cluster ID should be free")
+	}
+	if fs.GetInBitmap(3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+		t.Errorf("The third cluster ID should be free")
 	}
 
 	fs.Close()

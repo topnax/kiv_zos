@@ -24,7 +24,9 @@ func (fs *MyFileSystem) ChangeToDirectoryByNames(dirNames []string) bool {
 	return true
 }
 
-func (fs *MyFileSystem) VisitDirectoryByNamesAndExecute(dirNames []string, sfx func(), efx func()) {
+func (fs *MyFileSystem) VisitDirectoryByPathAndExecute(path string, sfx func(), efx func()) {
+	dirNames := GetDirNames(path)
+	dirNames = dirNames[:len(dirNames)-1]
 	fallbackNodeId := fs.currentInodeID
 
 	for _, name := range dirNames {

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"kiv_zos/utils"
 	"unsafe"
 )
 
@@ -124,12 +125,12 @@ func (fs *MyFileSystem) AppendDirItem(item DirectoryItem, node PseudoInode, node
 	return -1
 }
 
-func (fs *MyFileSystem) RemoveDirItem(delete DirectoryItem, nodeId ID) bool {
+func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID) bool {
 	items := fs.ReadDirItems(nodeId)
 	deleteIndex := -1
 	for index, item := range items {
 		// find delete to be deleted
-		if item.Name == delete.Name {
+		if item.Name == NameToDirName(delete) {
 			deleteIndex = index
 			break
 		}
@@ -137,6 +138,20 @@ func (fs *MyFileSystem) RemoveDirItem(delete DirectoryItem, nodeId ID) bool {
 	if deleteIndex == -1 {
 		return false
 	}
+
+	nodeIdtoBeDeleted := items[deleteIndex].NodeID
+	nodeToBeDeleted := fs.GetInodeAt(items[deleteIndex].NodeID)
+
+	if nodeToBeDeleted.IsDirectory {
+		if len(fs.ReadDirItems(nodeIdtoBeDeleted)) > 2 {
+			utils.PrintError("Cannot delete a directory that is not empty")
+			return false
+		}
+
+	}
+
+	fs.ShrinkInodeData(&nodeToBeDeleted, nodeIdtoBeDeleted, 0)
+	fs.ClearInodeById(nodeIdtoBeDeleted)
 
 	if deleteIndex != len(items)-1 {
 		items[deleteIndex] = items[len(items)-1]

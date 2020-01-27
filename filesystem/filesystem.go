@@ -11,4 +11,7 @@ type FileSystem interface {
 	CreateNewDirectory(name string)
 	ChangeDirectory(path string)
 	ListDirectoryContent(name string)
+	Info(path string)
+	Print(path string)
+	RemoveDirectory(path string)
 }

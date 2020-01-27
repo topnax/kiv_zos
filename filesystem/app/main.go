@@ -83,6 +83,12 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.CreateNewDirectory(*mkdirDirName)
 	case lsCommand.FullCommand():
 		fs.ListDirectoryContent(*lsDirName)
+	case infoCommand.FullCommand():
+		fs.Info(*infoTarget)
+	case catCommand.FullCommand():
+		fs.Print(*catDirName)
+	case rmDirCommand.FullCommand():
+		fs.RemoveDirectory(*rmDirTarget)
 	case exitCommand.FullCommand():
 		exit(fs)
 	default:
