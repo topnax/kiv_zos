@@ -2,8 +2,63 @@ package myfilesystem
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"kiv_zos/utils"
+	"os"
 )
+
+func (fs *MyFileSystem) CopyIn(src string, dst string) {
+	fs.VisitDirectoryByPathAndExecute(dst, func() {
+		if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), GetTargetName(dst)).NodeID == -1 {
+			file, err := os.Open(src)
+			if err == nil {
+				first := true
+				id := ID(-1)
+				node := PseudoInode{}
+				clusterIndex := 0
+				var bytes [ClusterSize]byte
+				for {
+					read, err := file.Read(bytes[:])
+					if err == nil {
+						if read > 0 {
+							if first {
+								id = fs.AddInode(node)
+								first = false
+							}
+							if id >= 0 {
+								fs.AddDataToInode(bytes, &node, id, clusterIndex)
+								node.FileSize += Size(read)
+							}
+						} else {
+							break
+						}
+					} else {
+						logrus.Warn(err)
+						if first {
+							utils.PrintError(fmt.Sprintf("Could not read file '%s!", src))
+						}
+						break
+					}
+					clusterIndex++
+					if !first {
+						fs.SetInodeAt(id, node)
+						utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
+						fs.AddDirItem(DirectoryItem{
+							NodeID: id,
+							Name:   NameToDirName(GetTargetName(dst)),
+						}, fs.currentInodeID)
+					}
+				}
+			} else {
+				utils.PrintError(fmt.Sprintf("Could not find a file in the real FS at '%s'", src))
+			}
+		} else {
+			utils.PrintError(fmt.Sprintf("File '%s' already exists at '%s'", GetTargetName(dst), dst))
+		}
+	}, func() {
+		utils.PrintError(fmt.Sprintf("'%s' destination path not found", dst))
+	})
+}
 
 func (fs MyFileSystem) Print(path string) {
 	tgtName := GetTargetName(path)

@@ -13,5 +13,6 @@ type FileSystem interface {
 	ListDirectoryContent(name string)
 	Info(path string)
 	Print(path string)
+	CopyIn(src string, dst string)
 	RemoveDirectory(path string)
 }
