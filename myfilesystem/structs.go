@@ -67,7 +67,7 @@ type PseudoInode struct {
 
 type DirectoryItem struct {
 	NodeID ID
-	Name   [maxFileNameLength]rune
+	Name   [maxFileNameLength]byte
 }
 
 func (dirItem DirectoryItem) GetName() string {

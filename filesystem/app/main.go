@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"kiv_zos/filesystem"
+	"kiv_zos/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 )
 
 func Main(args []string, fs filesystem.FileSystem) {
+	log.SetLevel(log.WarnLevel)
 	args = append(args, "myfs")
 	if len(args) > 0 {
 		fs.FilePath(args[0])
@@ -26,8 +28,10 @@ func Main(args []string, fs filesystem.FileSystem) {
 		scanner := bufio.NewScanner(os.Stdin)
 		fsApp.Terminate(func(_ int) {})
 		kingpin.CommandLine.Terminate(func(_ int) {})
+		utils.PrintBlue(fmt.Sprintf("%s > ", fs.CurrentPath()))
 		for scanner.Scan() {
 			parseArgs(strings.Split(strings.Trim(scanner.Text(), " "), " "), fs)
+			utils.PrintBlue(fmt.Sprintf("%s > ", fs.CurrentPath()))
 		}
 	} else {
 		log.Errorln("File path argument not supplied")
@@ -63,6 +67,8 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		return
 	}
 	switch parseResult {
+	case cdCommand.FullCommand():
+		fs.ChangeDirectory(*cdDirName)
 	case formatCommand.FullCommand():
 		Format(fs, *formatDesiredSize)
 	case cpCommand.FullCommand():
@@ -71,6 +77,12 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fmt.Println("mv: ", *mvSrc, *mvDst)
 	case rmCommand.FullCommand():
 		fmt.Println("rm: ", *rmTarget)
+	case pwdCommand.FullCommand():
+		fs.PrintCurrentPath()
+	case mkdirCommand.FullCommand():
+		fs.CreateNewDirectory(*mkdirDirName)
+	case lsCommand.FullCommand():
+		fs.ListDirectoryContent(*lsDirName)
 	case exitCommand.FullCommand():
 		exit(fs)
 	default:

@@ -6,4 +6,9 @@ type FileSystem interface {
 	Load() bool
 	IsLoaded() bool
 	Close()
+	PrintCurrentPath()
+	CurrentPath() string
+	CreateNewDirectory(name string)
+	ChangeDirectory(path string)
+	ListDirectoryContent(name string)
 }

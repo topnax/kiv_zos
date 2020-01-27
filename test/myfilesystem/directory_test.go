@@ -1,6 +1,7 @@
 package myfilesystem
 
 import (
+	"github.com/sirupsen/logrus"
 	"kiv_zos/myfilesystem"
 	"testing"
 	"unsafe"
@@ -106,13 +107,13 @@ func TestAddDirectoryItem(t *testing.T) {
 
 	dirItem := myfilesystem.DirectoryItem{
 		NodeID: 2,
-		Name:   [12]rune{'H', 'E', 'L', 'L', 'O'},
+		Name:   myfilesystem.NameToDirName("Hello"),
 	}
 	fs.AddDirItem(dirItem, nodeId)
 
 	dirItem2 := myfilesystem.DirectoryItem{
 		NodeID: 3,
-		Name:   [12]rune{'H', 'i', 'c', 'u', 'p'},
+		Name:   myfilesystem.NameToDirName("Hiccup"),
 	}
 
 	fs.AddDirItem(dirItem2, nodeId)
@@ -143,16 +144,16 @@ func TestAddDirectoryItems(t *testing.T) {
 
 	dirItem := myfilesystem.DirectoryItem{
 		NodeID: 2,
-		Name:   [12]rune{'H', 'E', 'L', 'L', 'O'},
+		Name:   myfilesystem.NameToDirName("HELLO"),
 	}
 
 	dirItem2 := myfilesystem.DirectoryItem{
 		NodeID: 3,
-		Name:   [12]rune{'H', 'i', 'c', 'u', 'p'},
+		Name:   myfilesystem.NameToDirName("Hicup"),
 	}
 	dirItem3 := myfilesystem.DirectoryItem{
 		NodeID: 4,
-		Name:   [12]rune{'1', 'i', 'c', 'S', 'B', 'Z'},
+		Name:   myfilesystem.NameToDirName("Rndmwrds"),
 	}
 
 	for i := 0; i < 20; i++ {
@@ -200,20 +201,20 @@ func TestRemoveDirectoryItems(t *testing.T) {
 
 	dirItem := myfilesystem.DirectoryItem{
 		NodeID: 2,
-		Name:   [12]rune{'H', 'E', 'L', 'L', 'O'},
+		Name:   myfilesystem.NameToDirName("Hello"),
 	}
 
 	dirItem2 := myfilesystem.DirectoryItem{
 		NodeID: 3,
-		Name:   [12]rune{'H', 'i', 'c', 'u', 'p'},
+		Name:   myfilesystem.NameToDirName("Hiccup"),
 	}
 	dirItem3 := myfilesystem.DirectoryItem{
 		NodeID: 4,
-		Name:   [12]rune{'1', 'i', 'c', 'S', 'B', 'Z'},
+		Name:   myfilesystem.NameToDirName("Rndname"),
 	}
 	dirItem4 := myfilesystem.DirectoryItem{
 		NodeID: 5,
-		Name:   [12]rune{'2', 'r', 'x', 's', 'W', 'Z'},
+		Name:   myfilesystem.NameToDirName("TestName"),
 	}
 
 	fs.AddDirItem(dirItem, nodeId)
@@ -291,7 +292,7 @@ func TestListDirectoryItems(t *testing.T) {
 	})
 	dirItem := myfilesystem.DirectoryItem{
 		NodeID: dirId,
-		Name:   [12]rune{'t', 'e', 'x', 't'},
+		Name:   myfilesystem.NameToDirName("text"),
 	}
 
 	dirId = fs.AddInode(myfilesystem.PseudoInode{
@@ -299,7 +300,7 @@ func TestListDirectoryItems(t *testing.T) {
 	})
 	dirItem2 := myfilesystem.DirectoryItem{
 		NodeID: dirId,
-		Name:   [12]rune{'k', 'n', 'i', 'h', 'a'},
+		Name:   myfilesystem.NameToDirName("kniha"),
 	}
 
 	dirId = fs.AddInode(myfilesystem.PseudoInode{
@@ -307,19 +308,52 @@ func TestListDirectoryItems(t *testing.T) {
 	})
 	dirItem3 := myfilesystem.DirectoryItem{
 		NodeID: dirId,
-		Name:   [12]rune{'p', 'd', 'f', 'k', 'a'},
+		Name:   myfilesystem.NameToDirName("pdfka"),
 	}
 
 	fs.AddDirItem(dirItem, rootId)
 	fs.AddDirItem(dirItem2, rootId)
 	fs.AddDirItem(dirItem3, rootId)
 
-	rootDirItem := myfilesystem.DirectoryItem{
-		NodeID: rootId,
-		Name:   [12]rune{'s', 'l', 'o', 'z', 'k', 'a'},
+	//rootDirItem := myfilesystem.DirectoryItem{
+	//	NodeID: rootId,
+	//	Name:   myfilesystem.NameToDirName("slozka"),
+	//}
+
+	fs.ListDirectory(rootId)
+
+	//fs.PrintInfo(fs.GetInodeAt(rootId), rootDirItem)
+}
+func TestFindDirPath(t *testing.T) {
+	fs := myfilesystem.NewMyFileSystem("testfs")
+	fs.RealMode = true
+	fs.Format(1 * 1024 * 1024)
+
+	slozkaId := fs.NewDirectory(0, "slozka", false)
+
+	podSlozkaId := fs.NewDirectory(slozkaId, "podslozka", false)
+
+	logrus.Infof("root %v", fs.ReadDirItems(0))
+	logrus.Infof("1st %v", fs.ReadDirItems(slozkaId))
+	logrus.Infof("2nd %v", fs.ReadDirItems(podSlozkaId))
+	logrus.Infof("1st %d", slozkaId)
+	logrus.Infof("2nd %d", podSlozkaId)
+
+	want := "/slozka/podslozka/"
+	got := fs.FindDirPath(podSlozkaId)
+	if want != got {
+		t.Errorf("FindDirPath failed, want=%s, got=%s", want, got)
 	}
 
-	fs.ListDirectory(rootId, rootDirItem)
+	want = "/slozka/"
+	got = fs.FindDirPath(slozkaId)
+	if want != got {
+		t.Errorf("FindDirPath failed, want=%s, got=%s", want, got)
+	}
 
-	fs.PrintInfo(fs.GetInodeAt(rootId), rootDirItem)
+	want = "/"
+	got = fs.FindDirPath(0)
+	if want != got {
+		t.Errorf("FindDirPath failed, want=%s, got=%s", want, got)
+	}
 }

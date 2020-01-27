@@ -8,3 +8,7 @@ func PrintError(format string) {
 func PrintSuccess(format string) {
 	fmt.Printf("\x1b[32;1m" + format + "\x1b[0m\n")
 }
+
+func PrintBlue(content string) {
+	fmt.Printf("\x1b[34;1m" + content + "\x1b[0m")
+}

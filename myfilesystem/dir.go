@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"kiv_zos/utils"
 	"unsafe"
 )
 
@@ -73,7 +72,7 @@ func (fs *MyFileSystem) ReadDirItems(nodeId ID) []DirectoryItem {
 		}
 		return items
 	} else {
-		log.Warnf("Trying to read a directory item to an inode that is not a directory")
+		log.Warnf("Trying to read a directory item from an inode=%d that is not a directory", nodeId)
 	}
 	return []DirectoryItem{}
 }
@@ -188,10 +187,10 @@ func ItemsToBytes(items []DirectoryItem) []byte {
 	return dirItemBytes
 }
 
-func (fs MyFileSystem) ListDirectory(nodeId ID, item DirectoryItem) {
+func (fs MyFileSystem) ListDirectory(nodeId ID) {
 	node := fs.GetInodeAt(nodeId)
 	if node.IsDirectory {
-		utils.PrintSuccess(fmt.Sprintf("Items of %s", item.GetName()))
+		//utils.PrintSuccess(fmt.Sprintf("Items of %s", item.GetName()))
 		items := fs.ReadDirItems(nodeId)
 
 		for _, item := range items {
@@ -205,19 +204,102 @@ func (fs MyFileSystem) ListDirectory(nodeId ID, item DirectoryItem) {
 
 			fmt.Printf("%s%s\n", char, item.GetName())
 		}
-
-		for _, item := range items {
-			node = fs.GetInodeAt(item.NodeID)
-			var char string
-			if node.IsDirectory {
-				char = "+"
-			} else {
-				char = "-"
-			}
-
-			fmt.Printf("%s%s\n", char, item.GetName())
-		}
 	} else {
-		utils.PrintError(fmt.Sprintf("%s is not a directory", item.GetName()))
+		log.Errorf("Trying to list directory of node=%d that is not a directory", nodeId)
+	}
+}
+
+func (fs *MyFileSystem) NewDirectory(parentNodeId ID, name string, formatting bool) ID {
+
+	if !formatting && fs.FindDirItemByName(fs.ReadDirItems(parentNodeId), name).NodeID != -1 {
+		log.Warnf("Directory '%s' already exists in %s", name, fs.FindDirPath(parentNodeId))
+		return -1
+	}
+
+	newNode := PseudoInode{
+		IsDirectory: true,
+	}
+	newNodeId := fs.AddInode(newNode)
+
+	// add a new dir item to the parent node
+	if !formatting {
+		fs.AddDirItem(DirectoryItem{
+			NodeID: newNodeId,
+			Name:   NameToDirName(name),
+		}, parentNodeId)
+	}
+
+	fs.AddDirItem(DirectoryItem{
+		NodeID: newNodeId,
+		Name:   NameToDirName("."),
+	}, newNodeId)
+
+	fs.AddDirItem(DirectoryItem{
+		NodeID: parentNodeId,
+		Name:   NameToDirName(".."),
+	}, newNodeId)
+
+	return newNodeId
+}
+
+func NameToDirName(name string) [maxFileNameLength]byte {
+	var dirNameBytes [maxFileNameLength]byte
+	copy(dirNameBytes[:], name)
+	return dirNameBytes
+}
+
+func (fs *MyFileSystem) CurrentPath() string {
+	return fs.FindDirPath(fs.currentInodeID)
+}
+
+func (fs *MyFileSystem) FindDirPath(currentInodeId ID) string {
+	path := ""
+	item, parentId := fs.FindDirItemById(currentInodeId)
+	path += item.GetName() + "/"
+	for item.NodeID != 0 {
+		itemx, pid := fs.FindDirItemById(parentId)
+		item = itemx
+		parentId = pid
+		path = item.GetName() + "/" + path
+	}
+
+	return path
+}
+
+func (fs *MyFileSystem) FindDirItemById(currentInodeId ID) (DirectoryItem, ID) {
+	if currentInodeId == 0 {
+		return DirectoryItem{0, NameToDirName("")}, 0
+	}
+	node := fs.GetInodeAt(currentInodeId)
+
+	if !node.IsDirectory {
+		panic("FindDirNameById called on non-dir node")
+	} else {
+		items := fs.ReadDirItems(currentInodeId)
+
+		return fs.FindDirItemByNodeId(fs.ReadDirItems(items[1].NodeID), currentInodeId), items[1].NodeID
+	}
+}
+
+func (fs *MyFileSystem) FindDirItemByName(items []DirectoryItem, name string) DirectoryItem {
+	for _, item := range items {
+		if item.Name == NameToDirName(name) {
+			return item
+		}
+	}
+	return DirectoryItem{
+		NodeID: -1,
+	}
+}
+
+func (fs *MyFileSystem) FindDirItemByNodeId(items []DirectoryItem, id ID) DirectoryItem {
+	for _, item := range items {
+		if item.NodeID == id {
+			return item
+		}
+	}
+	panic("Dir item mot found by ID")
+	return DirectoryItem{
+		NodeID: -1,
 	}
 }

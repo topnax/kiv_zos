@@ -391,15 +391,15 @@ func TestAddAndReadDataIndirect(t *testing.T) {
 		Indirect2:   0,
 	}
 
-	fs.SetInodeAt(0, inode)
+	id := fs.AddInode(inode)
 
 	if true {
 		for i := 0; i < 964; i++ {
 			want := [myfilesystem.ClusterSize]byte{byte(i), 11, 12, 13, 14, 0, byte(i)}
 
-			fs.AddDataToInode(want, &inode, 0, i)
+			fs.AddDataToInode(want, &inode, id, i)
 
-			got := fs.ReadDataFromInodeAt(fs.GetInodeAt(0), i)
+			got := fs.ReadDataFromInodeAt(fs.GetInodeAt(id), i)
 
 			if want != got {
 				t.Errorf("tc=%d, want=%b, got=%b", i, want, got)
@@ -530,9 +530,7 @@ func TestShrinkData(t *testing.T) {
 
 	fs.ShrinkInodeData(&node, id, 2000)
 
-	fs.FindFreeClusterID()
-
-	if fs.GetInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if fs.GetInBitmap(2+3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("The second cluster ID should be free")
 	}
 
@@ -545,10 +543,10 @@ func TestGetUsedClusterAddresses(t *testing.T) {
 	fs.Format(1 * 1024 * 1024)
 
 	id := fs.AddInode(myfilesystem.PseudoInode{})
-	dirItem := myfilesystem.DirectoryItem{
-		NodeID: 99,
-		Name:   [12]rune{'s', 'o', 'u', 'b'},
-	}
+	//dirItem := myfilesystem.DirectoryItem{
+	//	NodeID: 99,
+	//	Name:   [12]rune{'s', 'o', 'u', 'b'},
+	//}
 	inode := fs.GetInodeAt(id)
 	var addresses []myfilesystem.Address
 	for i := 0; i < 15; i++ {
@@ -564,7 +562,7 @@ func TestGetUsedClusterAddresses(t *testing.T) {
 		}
 	}
 
-	fs.PrintInfo(inode, dirItem)
+	//fs.PrintInfo(inode, dirItem)
 
 	fs.Close()
 }

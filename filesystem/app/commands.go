@@ -19,16 +19,18 @@ var (
 	mkdirCommand = fsApp.Command("mkdir", "Creates a directory")
 	mkdirDirName = mkdirCommand.Arg("dirname", "Directory name").Required().String()
 
-	lsCommand = kingpin.Command("ls", "Creates a directory")
-	lsDirName = lsCommand.Arg("dirname", "Directory name").Required().String()
+	lsCommand = fsApp.Command("ls", "Prints directory content")
+	lsDirName = lsCommand.Arg("dirname", "Directory name").Default(".").String()
 
-	catCommand = fsApp.Command("cat", "Creates a directory")
-	catDirName = catCommand.Arg("dirname", "Directory name").Required().String()
+	catCommand = fsApp.Command("cat", "Prints a files content")
+	catDirName = catCommand.Arg("filename", "File name").Required().String()
 
 	cdCommand = fsApp.Command("cd", "Changes the current directory to the specified one")
 	cdDirName = cdCommand.Arg("dirname", "Directory name").Required().String()
 
 	pwdCommand = fsApp.Command("pwd", "Prints the path to the current working directory")
+
+	testCommand = fsApp.Command("test", "Prints the path to the current working directory")
 
 	infoCommand = fsApp.Command("info", "Prints information about the given file/directory")
 	infoTarget  = infoCommand.Arg("target", "File or directory to be inspected").Required().String()

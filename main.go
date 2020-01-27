@@ -7,5 +7,7 @@ import (
 )
 
 func main() {
-	app.Main(os.Args[1:], &myfilesystem.MyFileSystem{})
+	myfs := myfilesystem.MyFileSystem{}
+	myfs.RealMode = true
+	app.Main(os.Args[1:], &myfs)
 }

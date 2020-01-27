@@ -11,14 +11,24 @@ type MyFileSystem struct {
 	filePath           string
 	File               *os.File
 	SuperBlock         SuperBlock
-	currentInode       PseudoInode
+	currentInodeID     ID
 	freeClusterIds     []ID
 	freeClusterIdIndex int
+	RealMode           bool
+}
+
+func (fs *MyFileSystem) SetRealMode(realMode bool) {
+	fs.RealMode = realMode
 }
 
 func (fs *MyFileSystem) Close() {
 	if fs.File != nil {
-		_ = fs.File.Close()
+		err := fs.File.Close()
+		if err != nil {
+			log.Error(err)
+		} else {
+			log.Info("File successfully closed...")
+		}
 	}
 }
 
@@ -27,7 +37,7 @@ func (fs *MyFileSystem) IsLoaded() bool {
 }
 
 func (fs *MyFileSystem) Load() bool {
-	file, err := os.Open(fs.filePath)
+	file, err := os.OpenFile(fs.filePath, os.O_RDWR, os.ModePerm)
 	log.Infof("About to load a filesystem at path of '%s'", fs.filePath)
 	if err == nil {
 		_, err = file.Seek(0, io.SeekStart)

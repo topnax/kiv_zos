@@ -42,6 +42,9 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 					log.Error(err)
 				} else {
 					fs.File = file
+					if fs.RealMode {
+						fs.NewDirectory(0, "", true)
+					}
 				}
 			} else {
 				log.Errorf("Could not seek at a File at '%s' at SEEK_SET of 0", fs.filePath)
