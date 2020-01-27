@@ -74,7 +74,7 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 	case cpCommand.FullCommand():
 		log.Infof("cp: '%s' '%s'", *cpSrc, *cpDst)
 	case mvCommand.FullCommand():
-		fmt.Println("mv: ", *mvSrc, *mvDst)
+		fs.Move(*mvSrc, *mvDst)
 	case rmCommand.FullCommand():
 		fmt.Println("rm: ", *rmTarget)
 	case pwdCommand.FullCommand():

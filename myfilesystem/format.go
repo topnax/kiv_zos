@@ -27,6 +27,7 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 	fs.SuperBlock.init(desiredFsSize)
 
 	fs.SuperBlock.info()
+	fs.freeClusterIds = []ID{}
 
 	file, err := os.Create(fs.filePath)
 

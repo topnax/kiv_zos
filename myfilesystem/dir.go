@@ -125,7 +125,7 @@ func (fs *MyFileSystem) AppendDirItem(item DirectoryItem, node PseudoInode, node
 	return -1
 }
 
-func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID) bool {
+func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID, removeData bool) bool {
 	items := fs.ReadDirItems(nodeId)
 	deleteIndex := -1
 	for index, item := range items {
@@ -150,7 +150,9 @@ func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID) bool {
 
 	}
 
-	fs.ShrinkInodeData(&nodeToBeDeleted, nodeIdtoBeDeleted, 0)
+	if removeData {
+		fs.ShrinkInodeData(&nodeToBeDeleted, nodeIdtoBeDeleted, 0)
+	}
 	fs.ClearInodeById(nodeIdtoBeDeleted)
 
 	if deleteIndex != len(items)-1 {
