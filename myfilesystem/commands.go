@@ -7,6 +7,35 @@ import (
 	"os"
 )
 
+func (fs *MyFileSystem) CopyOut(src string, dst string) {
+	fs.VisitDirectoryByPathAndExecute(src, func() {
+		id := fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), GetTargetName(src)).NodeID
+		if id != -1 {
+			if _, err := os.Stat(dst); os.IsNotExist(err) {
+				file, err := os.Create(dst)
+				if err == nil {
+					fs.ReadDataFromInodeFx(fs.GetInodeAt(id), func(data []byte) {
+						_, err = file.Write(data)
+						if err != nil {
+							logrus.Error(err)
+							utils.PrintError(fmt.Sprintf("An error occurred while writing data to '%s' in the real fs from '%s'.", dst, src))
+						}
+					})
+				} else {
+					logrus.Error(err)
+					utils.PrintError(fmt.Sprintf("An error occurred while opening '%s' in the real fs.", dst))
+				}
+			} else {
+				utils.PrintError(fmt.Sprintf("'%s' already exists in the real fs. Please use a different file", dst))
+			}
+		} else {
+			utils.PrintError(fmt.Sprintf("File '%s' does not exist exists at '%s'", GetTargetName(src), src))
+		}
+	}, func() {
+		utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+	})
+}
+
 func (fs *MyFileSystem) CopyIn(src string, dst string) {
 	fs.VisitDirectoryByPathAndExecute(dst, func() {
 		if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), GetTargetName(dst)).NodeID == -1 {
@@ -28,6 +57,9 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 							if id >= 0 {
 								fs.AddDataToInode(bytes, &node, id, clusterIndex)
 								node.FileSize += Size(read)
+							} else {
+								utils.PrintError("Not enough inodes, aborting")
+								break
 							}
 						} else {
 							break
@@ -40,14 +72,14 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 						break
 					}
 					clusterIndex++
-					if !first {
-						fs.SetInodeAt(id, node)
-						utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
-						fs.AddDirItem(DirectoryItem{
-							NodeID: id,
-							Name:   NameToDirName(GetTargetName(dst)),
-						}, fs.currentInodeID)
-					}
+				}
+				if !first {
+					fs.SetInodeAt(id, node)
+					utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
+					fs.AddDirItem(DirectoryItem{
+						NodeID: id,
+						Name:   NameToDirName(GetTargetName(dst)),
+					}, fs.currentInodeID)
 				}
 			} else {
 				utils.PrintError(fmt.Sprintf("Could not find a file in the real FS at '%s'", src))

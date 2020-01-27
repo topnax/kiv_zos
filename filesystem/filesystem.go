@@ -14,5 +14,6 @@ type FileSystem interface {
 	Info(path string)
 	Print(path string)
 	CopyIn(src string, dst string)
+	CopyOut(src string, dst string)
 	RemoveDirectory(path string)
 }

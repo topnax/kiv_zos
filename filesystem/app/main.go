@@ -91,6 +91,8 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.RemoveDirectory(*rmDirTarget)
 	case inCpCommand.FullCommand():
 		fs.CopyIn(*inCpSrc, *inCpDst)
+	case outCpCommand.FullCommand():
+		fs.CopyOut(*outCpSrc, *outCpDst)
 	case exitCommand.FullCommand():
 		exit(fs)
 	default:
