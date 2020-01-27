@@ -1,0 +1,10 @@
+format 10MB
+mkdir slozka
+cd slozka
+mkdir podslozka
+mkdir podslozka2
+rm podslozka
+ls
+cd ..
+mkdir slozka2
+ls

@@ -144,7 +144,7 @@ func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address,
 				tbr := idsLen - i - 1
 				if ids[tbr] >= ID(bitCount) {
 					ids = append(ids[:tbr], ids[tbr+1:]...)
-					log.Warnf("Removing free bit that exceeded bit at tbr=%d", tbr)
+					log.Infof("Removing free bit that exceeded bit at tbr=%d", tbr)
 				}
 			}
 			return ids

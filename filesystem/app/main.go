@@ -93,10 +93,27 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.CopyIn(*inCpSrc, *inCpDst)
 	case outCpCommand.FullCommand():
 		fs.CopyOut(*outCpSrc, *outCpDst)
+	case loadCommand.FullCommand():
+		loadCommands(*loadFile, fs)
 	case exitCommand.FullCommand():
 		exit(fs)
 	default:
 		fmt.Println("Unknown command... Try --help")
+	}
+}
+
+func loadCommands(path string, fs filesystem.FileSystem) {
+	file, err := os.Open(path)
+	if err == nil {
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			utils.PrintBlue(fmt.Sprintf("%s > ", fs.CurrentPath()))
+			utils.PrintHighlight(scanner.Text())
+			parseArgs(strings.Split(strings.Trim(scanner.Text(), " "), " "), fs)
+		}
+		utils.PrintSuccess("\nOK")
+	} else {
+		utils.PrintError(fmt.Sprintf("FILE NOT FOUND"))
 	}
 }
 
