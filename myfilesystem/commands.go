@@ -8,6 +8,56 @@ import (
 	"strings"
 )
 
+func (fs *MyFileSystem) Copy(src string, dst string) {
+	moved := false
+	fallbackNodeId := fs.currentInodeID
+	fs.VisitDirectoryByPathAndExecute(src, func() {
+		srcTarget := GetTargetName(src)
+		srcDirItem := fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), srcTarget)
+		srcNodeId := srcDirItem.NodeID
+		if srcNodeId != -1 {
+			fs.currentInodeID = fallbackNodeId
+			fs.VisitDirectoryByPathAndExecute(dst, func() {
+				dstTarget := GetTargetName(dst)
+				if strings.Trim(dstTarget, " ") == "" {
+					dstTarget = srcTarget
+				}
+				if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID != -1 {
+					utils.PrintError(fmt.Sprintf("Cannot overwrite '%s' that exists at '%s'", dstTarget, dst))
+				} else {
+					dstNode := PseudoInode{}
+					dstNodeId := fs.AddInode(dstNode)
+					fs.AddDirItem(DirectoryItem{
+						NodeID: dstNodeId,
+						Name:   NameToDirName(dstTarget),
+					}, fs.currentInodeID)
+					srcNode := fs.GetInodeAt(srcNodeId)
+					clusterIndex := 0
+					var clusterData [ClusterSize]byte
+					fs.ReadDataFromInodeFx(srcNode, func(data []byte) {
+						copy(clusterData[:], data)
+						fs.AddDataToInode(clusterData, &dstNode, dstNodeId, clusterIndex)
+						clusterIndex++
+						dstNode.FileSize += Size(len(data))
+					})
+					fs.SetInodeAt(dstNodeId, dstNode)
+					moved = true
+				}
+			}, func() {
+				utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+			})
+
+			if moved {
+				utils.PrintSuccess("OK")
+			}
+		} else {
+			utils.PrintError(fmt.Sprintf("File '%s' does not exist exists at '%s'", srcTarget, src))
+		}
+	}, func() {
+		utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+	})
+}
+
 func (fs *MyFileSystem) Move(src string, dst string) {
 	moved := false
 	fallbackNodeId := fs.currentInodeID
@@ -39,25 +89,8 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 
 			if moved {
 				fs.RemoveDirItem(srcTarget, srcDirNodeId, false)
-				utils.PrintSuccess("Moved")
+				utils.PrintSuccess("OK")
 			}
-			//if _, err := os.Stat(dst); os.IsNotExist(err) {
-			//	file, err := os.Create(dst)
-			//	if err == nil {
-			//		fs.ReadDataFromInodeFx(fs.GetInodeAt(id), func(data []byte) {
-			//			_, err = file.Write(data)
-			//			if err != nil {
-			//				logrus.Error(err)
-			//				utils.PrintError(fmt.Sprintf("An error occurred while writing data to '%s' in the real fs from '%s'.", dst, src))
-			//			}
-			//		})
-			//	} else {
-			//		logrus.Error(err)
-			//		utils.PrintError(fmt.Sprintf("An error occurred while opening '%s' in the real fs.", dst))
-			//	}
-			//} else {
-			//	utils.PrintError(fmt.Sprintf("'%s' already exists in the real fs. Please use a different file", dst))
-			//}
 		} else {
 			utils.PrintError(fmt.Sprintf("File '%s' does not exist exists at '%s'", srcTarget, src))
 		}
@@ -239,7 +272,11 @@ func (fs *MyFileSystem) Info(path string) {
 func (fs *MyFileSystem) RemoveDirectory(path string) {
 	tgtName := GetTargetName(path)
 	fs.VisitDirectoryByPathAndExecute(path, func() {
-		fs.RemoveDirItem(tgtName, fs.currentInodeID, true)
+		if fs.RemoveDirItem(tgtName, fs.currentInodeID, true) {
+			utils.PrintSuccess("OK")
+		} else {
+			utils.PrintError(fmt.Sprintf("'%s' not found", path))
+		}
 	}, func() {
 		utils.PrintError(fmt.Sprintf("'%s' not found", path))
 	})

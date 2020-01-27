@@ -71,12 +71,10 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.ChangeDirectory(*cdDirName)
 	case formatCommand.FullCommand():
 		Format(fs, *formatDesiredSize)
-	case cpCommand.FullCommand():
-		log.Infof("cp: '%s' '%s'", *cpSrc, *cpDst)
 	case mvCommand.FullCommand():
 		fs.Move(*mvSrc, *mvDst)
 	case rmCommand.FullCommand():
-		fmt.Println("rm: ", *rmTarget)
+		fs.RemoveDirectory(*rmTarget)
 	case pwdCommand.FullCommand():
 		fs.PrintCurrentPath()
 	case mkdirCommand.FullCommand():
@@ -89,6 +87,8 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.Print(*catDirName)
 	case rmDirCommand.FullCommand():
 		fs.RemoveDirectory(*rmDirTarget)
+	case cpCommand.FullCommand():
+		fs.Copy(*cpSrc, *cpDst)
 	case inCpCommand.FullCommand():
 		fs.CopyIn(*inCpSrc, *inCpDst)
 	case outCpCommand.FullCommand():

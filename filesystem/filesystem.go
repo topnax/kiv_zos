@@ -13,6 +13,7 @@ type FileSystem interface {
 	ListDirectoryContent(name string)
 	Info(path string)
 	Print(path string)
+	Copy(src string, dst string)
 	CopyIn(src string, dst string)
 	CopyOut(src string, dst string)
 	Move(src string, dst string)
