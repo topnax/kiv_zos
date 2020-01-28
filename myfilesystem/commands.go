@@ -8,16 +8,19 @@ import (
 	"strings"
 )
 
+// copies from
 func (fs *MyFileSystem) Copy(src string, dst string) {
 	moved := false
 	fallbackNodeId := fs.currentInodeID
 	fs.VisitDirectoryByPathAndExecute(src, func() {
+		// cd into the source directory
 		srcTarget := GetTargetName(src)
 		srcDirItem := fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), srcTarget)
 		srcNodeId := srcDirItem.NodeID
 		if srcNodeId != -1 {
 			fs.currentInodeID = fallbackNodeId
 			fs.VisitDirectoryByPathAndExecute(dst, func() {
+				// cd into the destination directory
 				dstTarget := GetTargetName(dst)
 				if strings.Trim(dstTarget, " ") == "" {
 					dstTarget = srcTarget
@@ -31,6 +34,7 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 						utils.PrintError("NOT ENOUGH INODES, ABORTING")
 						return
 					}
+					// create a new directory item
 					fs.AddDirItem(DirectoryItem{
 						NodeID: dstNodeId,
 						Name:   NameToDirName(dstTarget),
@@ -38,6 +42,7 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 					srcNode := fs.GetInodeAt(srcNodeId)
 					clusterIndex := 0
 					var clusterData [ClusterSize]byte
+					// copy data into the new directory item
 					fs.ReadDataFromInodeFx(srcNode, func(data []byte) bool {
 						copy(clusterData[:], data)
 						clusterId := fs.AddDataToInode(clusterData, &dstNode, dstNodeId, clusterIndex)
@@ -51,6 +56,7 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 						dstNode.FileSize += Size(len(data))
 						return true
 					})
+					// save the inode
 					fs.SetInodeAt(dstNodeId, dstNode)
 					moved = true
 				}
@@ -69,9 +75,11 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 	})
 }
 
+// move the source to the destination
 func (fs *MyFileSystem) Move(src string, dst string) {
 	moved := false
 	fallbackNodeId := fs.currentInodeID
+	// cd to source path
 	fs.VisitDirectoryByPathAndExecute(src, func() {
 		srcTarget := GetTargetName(src)
 		srcDirNodeId := fs.currentInodeID
@@ -79,6 +87,7 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 		srcNodeId := srcDirItem.NodeID
 		if srcNodeId != -1 {
 			fs.currentInodeID = fallbackNodeId
+			// cd to destination
 			fs.VisitDirectoryByPathAndExecute(dst, func() {
 				dstTarget := GetTargetName(dst)
 				if strings.Trim(dstTarget, " ") == "" {
@@ -87,6 +96,7 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 				if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID != -1 {
 					utils.PrintError(fmt.Sprintf("CANNOT OVERWRITE '%s' THAT EXISTS AT '%s'", dstTarget, dst))
 				} else {
+					// at last, create a new file in the destination directory
 					dstNodeId := fs.AddInode(fs.GetInodeAt(srcNodeId))
 					fs.AddDirItem(DirectoryItem{
 						NodeID: dstNodeId,
@@ -110,13 +120,16 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 	})
 }
 
+// copies the file to the real filesystem
 func (fs *MyFileSystem) CopyOut(src string, dst string) {
+	// cd into the source directory
 	fs.VisitDirectoryByPathAndExecute(src, func() {
 		id := fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), GetTargetName(src)).NodeID
 		if id != -1 {
 			if _, err := os.Stat(dst); os.IsNotExist(err) {
 				file, err := os.Create(dst)
 				if err == nil {
+					// if new file on the real fs was created, read each data of the inode and write it to the new file on the real fs
 					fs.ReadDataFromInodeFx(fs.GetInodeAt(id), func(data []byte) bool {
 						_, err = file.Write(data)
 						if err != nil {
@@ -142,8 +155,11 @@ func (fs *MyFileSystem) CopyOut(src string, dst string) {
 	})
 }
 
+// copies a file from the real filesystem to the pseudo one
 func (fs *MyFileSystem) CopyIn(src string, dst string) {
+	// cd into the destination directory
 	fs.VisitDirectoryByPathAndExecute(dst, func() {
+		// check whether destination file does not exist
 		if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), GetTargetName(dst)).NodeID == -1 {
 			file, err := os.Open(src)
 			if err == nil {
@@ -153,6 +169,7 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 				clusterIndex := 0
 				var bytes [ClusterSize]byte
 				for {
+					// read the real file
 					read, err := file.Read(bytes[:])
 					if err == nil {
 						if read > 0 {
@@ -185,6 +202,7 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 					}
 					clusterIndex++
 				}
+				// save the inode and add a directory item
 				if !first {
 					fs.SetInodeAt(id, node)
 					//utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
@@ -205,8 +223,10 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 	})
 }
 
+// cat command implementation
 func (fs MyFileSystem) Print(path string) {
 	tgtName := GetTargetName(path)
+	// cd into the target directory
 	fs.VisitDirectoryByPathAndExecute(path, func() {
 		fs.PrintContent(fs.GetInodeAt(fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), tgtName).NodeID))
 	}, func() {
@@ -214,6 +234,7 @@ func (fs MyFileSystem) Print(path string) {
 	})
 }
 
+// prints the content of a the given inode, in string format
 func (fs MyFileSystem) PrintContent(node PseudoInode) {
 	fs.ReadDataFromInodeFx(node, func(data []byte) bool {
 		fmt.Printf("%s", data)
@@ -222,41 +243,36 @@ func (fs MyFileSystem) PrintContent(node PseudoInode) {
 	fmt.Print("\n")
 }
 
+// info command implementation
 func (fs MyFileSystem) PrintInfo(inodeId ID) {
 	inode := fs.GetInodeAt(inodeId)
-	stringz := ""
+	addressesOutput := ""
 	addresses := fs.GetUsedClusterAddresses(inode)
 	for _, address := range addresses {
-		stringz += fmt.Sprintf("%d ", address)
+		addressesOutput += fmt.Sprintf("%d ", address)
 	}
 	item := fs.FindDirItemByNodeId(fs.ReadDirItems(fs.currentInodeID), inodeId)
-	fmt.Printf("%s - %d - %d - %s\n", item.GetName(), item.NodeID, inode.FileSize, stringz)
+	fmt.Printf("%s - %d - %d - %s\n", item.GetName(), item.NodeID, inode.FileSize, addressesOutput)
 }
 
+// pwd implementation
 func (fs *MyFileSystem) PrintCurrentPath() {
 	fmt.Println(fs.FindDirPath(fs.currentInodeID))
 }
 
+// creates a new directory
 func (fs *MyFileSystem) CreateNewDirectory(name string) {
 	tgtName := GetTargetName(name)
 
+	// cd into the target path
 	fs.VisitDirectoryByPathAndExecute(name, func() {
 		fs.NewDirectory(fs.currentInodeID, tgtName, false)
-
 	}, func() {
 		utils.PrintError(fmt.Sprintf("Cannot create folder '%s' at '/%s/' because such path does not exist", tgtName, name))
 	})
 }
 
-func GetTargetName(path string) string {
-	dirNames := GetDirNames(path)
-	if len(dirNames) == 0 {
-		return path
-	} else {
-		return dirNames[len(dirNames)-1]
-	}
-}
-
+// ls command implementation
 func (fs MyFileSystem) ListDirectoryContent(name string) {
 	items := fs.ReadDirItems(fs.currentInodeID)
 
@@ -272,7 +288,9 @@ func (fs MyFileSystem) ListDirectoryContent(name string) {
 	}
 }
 
+// cd command implementation
 func (fs *MyFileSystem) ChangeDirectory(path string) {
+	// cd to root dir?
 	if path == FolderSeparator {
 		fs.ChangeToDirectoryByName(path)
 		return
@@ -296,6 +314,7 @@ func (fs *MyFileSystem) Info(path string) {
 	})
 }
 
+// rm command implementation
 func (fs *MyFileSystem) Remove(path string) {
 	if fs.RemoveAtPath(path) {
 		utils.PrintSuccess("OK")
@@ -303,9 +322,12 @@ func (fs *MyFileSystem) Remove(path string) {
 		utils.PrintError(fmt.Sprintf("ITEM AT '%s' NOT FOUND", path))
 	}
 }
+
+// removes the given target at the given path
 func (fs *MyFileSystem) RemoveAtPath(path string) bool {
 	tgtName := GetTargetName(path)
 	result := false
+	// cd to destination
 	fs.VisitDirectoryByPathAndExecute(path, func() {
 		if fs.RemoveDirItem(tgtName, fs.currentInodeID, true) {
 			result = true
@@ -315,6 +337,7 @@ func (fs *MyFileSystem) RemoveAtPath(path string) bool {
 	return result
 }
 
+// incorrect file removal, does only remove the dir item and resets the second direct cluster
 func (fs *MyFileSystem) BadRemove(path string) {
 	tgtName := GetTargetName(path)
 	fs.VisitDirectoryByPathAndExecute(path, func() {

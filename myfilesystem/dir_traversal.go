@@ -58,16 +58,22 @@ func (fs *MyFileSystem) ChangeToDirectoryByName(name string) ID {
 	return item.NodeID
 }
 
+// returns the target name based on the given path
+func GetTargetName(path string) string {
+	dirNames := GetDirNames(path)
+	if len(dirNames) == 0 {
+		return path
+	} else {
+		return dirNames[len(dirNames)-1]
+	}
+}
+
 func GetDirNames(path string) []string {
 	dirs := strings.Split(path, FolderSeparator)
 
 	if path[0] == '/' {
 		dirs[0] = "/"
 	}
-
-	//if len(dirs) == 0 {
-	//	return [] string {path}
-	//}
 
 	return dirs
 }

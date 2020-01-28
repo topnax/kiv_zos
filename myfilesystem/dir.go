@@ -9,39 +9,38 @@ import (
 	"unsafe"
 )
 
-type ReadOrder struct {
+// a struct that represents an order, used to select which bytes from which cluster should be read/written at
+type IOOrder struct {
 	ClusterId ID
 	Start     int
 	Bytes     int
 }
 
-func GetReadOrder(offset int, read int) []ReadOrder {
+// returns an array of orders, that will be used to write/read at the given offset
+func GetIOOrder(offset int, bytes int) []IOOrder {
 	clusterId := ID(offset / ClusterSize)
-
-	log.Infof("Computed cid %d", clusterId)
-
-	overflow := (offset%ClusterSize)+read > ClusterSize
-	log.Infof("overflow : %v", overflow)
+	overflow := (offset%ClusterSize)+bytes > ClusterSize
 
 	if !overflow {
-		return []ReadOrder{{
+		return []IOOrder{{
 			ClusterId: clusterId,
 			Start:     offset % ClusterSize,
-			Bytes:     read,
+			Bytes:     bytes,
 		}}
 	} else {
-		return []ReadOrder{{
+		return []IOOrder{{
 			ClusterId: clusterId,
 			Start:     offset % ClusterSize,
 			Bytes:     ClusterSize - (offset % ClusterSize),
 		}, {
 			ClusterId: clusterId + 1,
 			Start:     0,
-			Bytes:     read - (ClusterSize - (offset % ClusterSize)),
+			Bytes:     bytes - (ClusterSize - (offset % ClusterSize)),
 		}}
 	}
 }
 
+// adds a directory item to the given node
 func (fs *MyFileSystem) AddDirItem(item DirectoryItem, nodeId ID) {
 	node := fs.GetInodeAt(nodeId)
 	if node.IsDirectory {
@@ -51,14 +50,13 @@ func (fs *MyFileSystem) AddDirItem(item DirectoryItem, nodeId ID) {
 	}
 }
 
+// reads directory items from the given node
 func (fs *MyFileSystem) ReadDirItems(nodeId ID) []DirectoryItem {
 	node := fs.GetInodeAt(nodeId)
 	if node.IsDirectory {
 		data := fs.ReadDataFromInode(node)
 
 		buf := new(bytes.Buffer)
-
-		log.Infof("read data %v", data)
 
 		buf.Write(data)
 		var items []DirectoryItem
@@ -78,9 +76,11 @@ func (fs *MyFileSystem) ReadDirItems(nodeId ID) []DirectoryItem {
 	return []DirectoryItem{}
 }
 
+// appends a directory item to the given node
 func (fs *MyFileSystem) AppendDirItem(item DirectoryItem, node PseudoInode, nodeId ID) ID {
 	if node.IsDirectory {
 		buf := new(bytes.Buffer)
+		// convert item to binary
 		err := binary.Write(buf, binary.LittleEndian, item)
 		if err != nil {
 			fmt.Println("binary.Write failed:", err)
@@ -93,26 +93,26 @@ func (fs *MyFileSystem) AppendDirItem(item DirectoryItem, node PseudoInode, node
 			panic(err)
 		}
 		dirId := NextDirItemIndex(node)
-		readOrders := GetReadOrder(int(dirId)*int(unsafe.Sizeof(DirectoryItem{})), int(unsafe.Sizeof(DirectoryItem{})))
-		log.Infof("read dirItemBytes add=%v", dirItemBytes)
+		ioOrders := GetIOOrder(int(dirId)*int(unsafe.Sizeof(DirectoryItem{})), int(unsafe.Sizeof(DirectoryItem{})))
 		written := 0
-		for _, readOrder := range readOrders {
-			clusterBytes := fs.ReadDataFromInodeAt(node, int(readOrder.ClusterId))
-			log.Infof("curr clusterbytes=%v", clusterBytes)
+		// split into io orders, correctly append dir items to existing clusters
+		for _, ioOrder := range ioOrders {
+			clusterBytes := fs.ReadDataFromInodeAt(node, int(ioOrder.ClusterId))
 
-			firstHalfBytes := clusterBytes[0:readOrder.Start]
-			secondHalfBytes := clusterBytes[readOrder.Start+readOrder.Bytes:]
+			// split cluster bytes
+			firstHalfBytes := clusterBytes[0:ioOrder.Start]
+			secondHalfBytes := clusterBytes[ioOrder.Start+ioOrder.Bytes:]
 
-			log.Infof("first half bytes=%v readOrder.STart=%d", firstHalfBytes, readOrder.Start)
+			log.Infof("first half bytes=%v ioOrder.Start=%d", firstHalfBytes, ioOrder.Start)
 
-			write := append(firstHalfBytes, dirItemBytes[written:written+readOrder.Bytes]...)
+			write := append(firstHalfBytes, dirItemBytes[written:written+ioOrder.Bytes]...)
 			write = append(write, secondHalfBytes...)
-			written += readOrder.Bytes
+			written += ioOrder.Bytes
 
 			var final [ClusterSize]byte
 			copy(final[:], write)
 
-			id := fs.AddDataToInode(final, &node, nodeId, int(readOrder.ClusterId))
+			id := fs.AddDataToInode(final, &node, nodeId, int(ioOrder.ClusterId))
 			log.Infof("written @%d add=%v", id, final)
 		}
 
@@ -125,6 +125,7 @@ func (fs *MyFileSystem) AppendDirItem(item DirectoryItem, node PseudoInode, node
 	return -1
 }
 
+// removes a directory item from the given node
 func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID, removeData bool) bool {
 	items := fs.ReadDirItems(nodeId)
 	deleteIndex := -1
@@ -139,6 +140,7 @@ func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID, removeData bool)
 		return false
 	}
 
+	// node to be deleted
 	nodeIdToBeDeleted := items[deleteIndex].NodeID
 	nodeToBeDeleted := fs.GetInodeAt(items[deleteIndex].NodeID)
 
@@ -150,20 +152,24 @@ func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID, removeData bool)
 	}
 
 	if removeData {
+		// remove file data by shrinking it's data part to 0 bytes
 		fs.ShrinkInodeData(&nodeToBeDeleted, nodeIdToBeDeleted, 0)
 	}
 	if !fs.faultyMode {
 		fs.ClearInodeById(nodeIdToBeDeleted)
 	} else {
+		// while in faulty mode, node is not deleted and it's second direct pointer is compromised
 		nodeToBeDeleted.Direct2 = 0
 		fs.SetInodeAt(nodeIdToBeDeleted, nodeToBeDeleted)
 		utils.PrintHighlight(fmt.Sprintf("FAULTY MODE ENABLED FOR INODE OF ID=%d", nodeIdToBeDeleted))
 	}
 
+	// if the to be deleted directory item is not the last one, it is swapped with the last one
 	if deleteIndex != len(items)-1 {
 		items[deleteIndex] = items[len(items)-1]
 	}
 
+	// the last item is removed
 	items = items[:len(items)-1]
 
 	fs.WriteDataToInode(nodeId, ItemsToBytes(items))
@@ -173,6 +179,7 @@ func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID, removeData bool)
 	return true
 }
 
+// returns the next available dir item index
 func NextDirItemIndex(node PseudoInode) ID {
 	if node.FileSize == 0 {
 		return 0
@@ -180,10 +187,12 @@ func NextDirItemIndex(node PseudoInode) ID {
 	return ID(node.FileSize) / ID(unsafe.Sizeof(DirectoryItem{}))
 }
 
+// returns the number of directory items in a node
 func (fs MyFileSystem) GetDirItemsCount(node PseudoInode) Size {
 	return node.FileSize / Size(unsafe.Sizeof(DirectoryItem{}))
 }
 
+// converts a slice of directory items to a slice of bytes
 func ItemsToBytes(items []DirectoryItem) []byte {
 	if len(items) <= 0 {
 		log.Errorf("Trying to convert empty item array to bytes")
@@ -209,10 +218,10 @@ func ItemsToBytes(items []DirectoryItem) []byte {
 	return dirItemBytes
 }
 
+// lists the content of a directory given by a node
 func (fs MyFileSystem) ListDirectory(nodeId ID) {
 	node := fs.GetInodeAt(nodeId)
 	if node.IsDirectory {
-		//utils.PrintSuccess(fmt.Sprintf("Items of %s", item.GetName()))
 		items := fs.ReadDirItems(nodeId)
 
 		for _, item := range items {
@@ -224,13 +233,14 @@ func (fs MyFileSystem) ListDirectory(nodeId ID) {
 				char = "-"
 			}
 
-			fmt.Printf("%s%s\n", char, item.GetName())
+			fmt.Printf("%s %s\n", char, item.GetName())
 		}
 	} else {
 		log.Errorf("Trying to list directory of node=%d that is not a directory", nodeId)
 	}
 }
 
+// creates a new directory ad the given parent node
 func (fs *MyFileSystem) NewDirectory(parentNodeId ID, name string, formatting bool) ID {
 
 	if !formatting && fs.FindDirItemByName(fs.ReadDirItems(parentNodeId), name).NodeID != -1 {
@@ -264,16 +274,19 @@ func (fs *MyFileSystem) NewDirectory(parentNodeId ID, name string, formatting bo
 	return newNodeId
 }
 
+// converts a name to an array of bytes
 func NameToDirName(name string) [maxFileNameLength]byte {
 	var dirNameBytes [maxFileNameLength]byte
 	copy(dirNameBytes[:], name)
 	return dirNameBytes
 }
 
+// returns the current path
 func (fs *MyFileSystem) CurrentPath() string {
 	return fs.FindDirPath(fs.currentInodeID)
 }
 
+// recursively creates the current directory path
 func (fs *MyFileSystem) FindDirPath(currentInodeId ID) string {
 	path := ""
 	item, parentId := fs.FindDirItemById(currentInodeId)
@@ -288,6 +301,7 @@ func (fs *MyFileSystem) FindDirPath(currentInodeId ID) string {
 	return path
 }
 
+// finds a directory item by a node id
 func (fs *MyFileSystem) FindDirItemById(currentInodeId ID) (DirectoryItem, ID) {
 	if currentInodeId == 0 {
 		return DirectoryItem{0, NameToDirName("")}, 0
@@ -303,6 +317,7 @@ func (fs *MyFileSystem) FindDirItemById(currentInodeId ID) (DirectoryItem, ID) {
 	}
 }
 
+// finds a directory item by a name
 func (fs *MyFileSystem) FindDirItemByName(items []DirectoryItem, name string) DirectoryItem {
 	for _, item := range items {
 		if item.Name == NameToDirName(name) {
@@ -314,6 +329,7 @@ func (fs *MyFileSystem) FindDirItemByName(items []DirectoryItem, name string) Di
 	}
 }
 
+// finds a directory item by an ID
 func (fs *MyFileSystem) FindDirItemByNodeId(items []DirectoryItem, id ID) DirectoryItem {
 	for _, item := range items {
 		if item.NodeID == id {

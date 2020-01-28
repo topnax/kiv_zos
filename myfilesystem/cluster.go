@@ -8,10 +8,10 @@ import (
 	"unsafe"
 )
 
+// finds a free cluster id. if no id is in the cached, new search for ids is made
 func (fs *MyFileSystem) FindFreeClusterID() ID {
 	if fs.freeClusterIdIndex < len(fs.freeClusterIds)-1 {
 		id := fs.freeClusterIds[fs.freeClusterIdIndex]
-		//fs.freeClusterIds = append(fs.freeClusterIds[:0], fs.freeClusterIds[0+1:]...)
 		fs.freeClusterIdIndex++
 		return id
 	} else {
@@ -27,6 +27,7 @@ func (fs *MyFileSystem) FindFreeClusterID() ID {
 	return -1
 }
 
+// adds a cluster of data, returns the id of the cluster that was created
 func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 	freeID := fs.FindFreeClusterID()
 	log.Infof("Free id=%d", freeID)
@@ -42,6 +43,7 @@ func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 	return -1
 }
 
+// sets the cluster at the given id
 func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	clusterAddress := fs.GetClusterAddress(id)
 
@@ -60,11 +62,13 @@ func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	}
 }
 
+// returns the data of a cluster by cluster id
 func (fs *MyFileSystem) GetClusterDataAt(id ID) [ClusterSize]byte {
 	clusterAddress := fs.GetClusterAddress(id)
 	return fs.GetClusterDataAtAddress(clusterAddress)
 }
 
+// returns the data of a cluster by cluster address
 func (fs *MyFileSystem) GetClusterDataAtAddress(address Address) [ClusterSize]byte {
 	_, err := fs.File.Seek(int64(address), io.SeekStart)
 
@@ -83,19 +87,22 @@ func (fs *MyFileSystem) GetClusterDataAtAddress(address Address) [ClusterSize]by
 	}
 }
 
+// clears the cluster selected by id. Free's it's ID in the cluster bitmap
 func (fs *MyFileSystem) ClearClusterById(id ID) {
-	//clusterAddress := fs.GetClusterAddress(id)
 	fs.SetInBitmap(false, int32(id), fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize())
 }
 
+// returns a cluster address by ID
 func (fs *MyFileSystem) GetClusterAddress(id ID) Address {
 	return fs.SuperBlock.ClusterStartAddress + Address(Size(id)*Size(ClusterSize))
 }
 
+// returns a cluster ID by a cluster address
 func (fs *MyFileSystem) GetClusterId(address Address) ID {
 	return ID((address - fs.SuperBlock.ClusterStartAddress) / Address(ClusterSize))
 }
 
+// creates a cluster by ID
 func (fs *MyFileSystem) GetCluster(id ID) Cluster {
 	clusterAddress := fs.GetClusterAddress(id)
 	return Cluster{
@@ -105,6 +112,7 @@ func (fs *MyFileSystem) GetCluster(id ID) Cluster {
 	}
 }
 
+// writes an ID to the cluster at the given index
 func (cluster Cluster) WriteId(id ID, idIndex ID) {
 	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
 	log.Infof("WriteId seeking to %d, about to write %d at ID=%d", cluster.address, id, idIndex)
@@ -131,6 +139,7 @@ func (cluster Cluster) WriteId(id ID, idIndex ID) {
 	}
 }
 
+// writes an address to the cluster at the given index
 func (cluster Cluster) WriteAddress(address Address, addressId ID) {
 	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
 	log.Infof("WriteAddress seeking to %d, about to write %d at ID=%d", cluster.address, address, addressId)
@@ -155,6 +164,7 @@ func (cluster Cluster) WriteAddress(address Address, addressId ID) {
 	}
 }
 
+// writes data to a cluster with a certain offset
 func (cluster *Cluster) WriteDataOffset(data []byte, offset int) {
 	if len(data)+offset > ClusterSize {
 		panic("Cannot write... Data + offset > ClusterSize")
@@ -174,10 +184,12 @@ func (cluster *Cluster) WriteDataOffset(data []byte, offset int) {
 	}
 }
 
+// writes data to the given cluster
 func (cluster *Cluster) WriteData(data [ClusterSize]byte) {
 	cluster.WriteDataOffset(data[:], 0)
 }
 
+// reads data from the cluster
 func (cluster Cluster) ReadData() [ClusterSize]byte {
 	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
 
@@ -197,6 +209,7 @@ func (cluster Cluster) ReadData() [ClusterSize]byte {
 	return data
 }
 
+// reads address at the given ID from the cluster
 func (cluster Cluster) ReadAddress(index ID) Address {
 	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
 	log.Infof("ReadAddress seeking to: %d", cluster.address)
@@ -223,6 +236,7 @@ func (cluster Cluster) ReadAddress(index ID) Address {
 	return foundId
 }
 
+// reads ID at the given ID fro the cluster
 func (cluster Cluster) ReadId(index ID) ID {
 	_, err := cluster.fs.File.Seek(int64(cluster.address), io.SeekStart)
 	log.Infof("ReadId seeking to: %d", cluster.address)
@@ -249,6 +263,7 @@ func (cluster Cluster) ReadId(index ID) ID {
 	return foundId
 }
 
+// returns the used cluster count based by the given size
 func GetUsedClusterCount(size Size) Size {
 	currCount := size / ClusterSize
 	currRemainder := size % ClusterSize
