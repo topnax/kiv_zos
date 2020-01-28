@@ -97,6 +97,8 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.CopyOut(*outCpSrc, *outCpDst)
 	case loadCommand.FullCommand():
 		loadCommands(*loadFile, fs)
+	case badRmCommand.FullCommand():
+		fs.BadRemove(*badRmTarget)
 	case exitCommand.FullCommand():
 		exit(fs)
 	default:

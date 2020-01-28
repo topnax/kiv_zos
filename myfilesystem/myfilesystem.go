@@ -14,6 +14,7 @@ type MyFileSystem struct {
 	currentInodeID     ID
 	freeClusterIds     []ID
 	freeClusterIdIndex int
+	faultyMode         bool
 	RealMode           bool
 }
 

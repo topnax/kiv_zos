@@ -13,6 +13,7 @@ type FileSystem interface {
 	ConsistencyCheck()
 	ListDirectoryContent(name string)
 	Info(path string)
+	BadRemove(path string)
 	Print(path string)
 	Copy(src string, dst string)
 	CopyIn(src string, dst string)

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"kiv_zos/utils"
 	"math"
 	"os"
 	"unsafe"
@@ -45,6 +46,7 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 					fs.File = file
 					if fs.RealMode {
 						fs.NewDirectory(0, "", true)
+						utils.PrintSuccess("OK")
 					}
 				}
 			} else {
@@ -57,6 +59,7 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 		}
 	} else {
 		log.Errorf("Could not create a File at '%s' of size %d kB", fs.filePath, desiredFsSize/ClusterSize)
+		utils.PrintError("CANNOT CREATE FILE")
 		log.Error(err)
 	}
 }

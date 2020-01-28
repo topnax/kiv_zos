@@ -12,7 +12,7 @@ func (fs *MyFileSystem) ConsistencyCheck() {
 	fs.CheckThatFilesAreCorrectlyAllocated()
 }
 func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
-	foundFiles := NewDirItemSet()
+	foundFiles := NewIdSet()
 	fs.AddAllFiles(foundFiles, 0)
 	addressesPerCluster := ClusterSize / Size(unsafe.Sizeof(Address(0)))
 
@@ -24,6 +24,21 @@ func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
 
 	// second indirect cluster
 	count += addressesPerCluster * addressesPerCluster
+
+	freeIds := fs.FindFreeBitsInBitmap(int(fs.SuperBlock.InodeCount()), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize(), fs.SuperBlock.InodeCount())
+
+	freeIdSet := NewIdSet()
+
+	for _, id := range freeIds {
+		freeIdSet.Add(id)
+	}
+
+	foundFiles.Clear()
+	for i := Size(0); i < fs.SuperBlock.InodeCount(); i++ {
+		if !freeIdSet.Has(ID(i)) {
+			foundFiles.Add(ID(i))
+		}
+	}
 
 	//utils.PrintHighlight(fmt.Sprintf("Hypothetical maximal file size: %d", count*ClusterSize))
 
@@ -38,7 +53,7 @@ func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
 		}
 
 		if GetUsedClusterCount(node.FileSize) != Size(i) {
-			utils.PrintError(fmt.Sprintf("INODE %d HAS DIFFERENT AMOUNT OF ALLOCATED CLUSTERS THAN STATED IN THE HEADER", id))
+			utils.PrintError(fmt.Sprintf("INODE OF ID=%d HAS DIFFERENT AMOUNT OF ALLOCATED CLUSTERS THAN STATED IN THE HEADER", id))
 			return
 		}
 	}
@@ -46,7 +61,7 @@ func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
 }
 
 func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
-	foundFiles := NewDirItemSet()
+	foundFiles := NewIdSet()
 
 	if !fs.AddAllFiles(foundFiles, 0) {
 		utils.PrintError("FOUND AT LEAST TWO DIRECTORY ITEMS THAT POINT TO THE SAME INODE")
@@ -56,8 +71,8 @@ func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
 	ids := fs.FindFreeBitsInBitmap(int(fs.SuperBlock.InodeCount()), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize(), fs.SuperBlock.InodeCount())
 
 	if len(ids)+len(foundFiles.List)+1 != +int(fs.SuperBlock.InodeCount()) {
-		logrus.Errorf("%d total found nodes, but %d found used in the bitmap.", len(foundFiles.List)+1, len(ids))
-		utils.PrintSuccess("FOUND ONE OR MORE FILES THAT DO NOT BELONG IN A DIRECTORY")
+		logrus.Infof("%d total found nodes, but %d found used in the bitmap.", len(foundFiles.List)+1, int(fs.SuperBlock.InodeCount())-len(ids))
+		utils.PrintError("FOUND ONE OR MORE FILES THAT DO NOT BELONG IN A DIRECTORY")
 	} else {
 		utils.PrintSuccess("OK - EVERY FILE BELONGS IN A DIRECTORY")
 	}

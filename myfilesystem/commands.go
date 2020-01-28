@@ -177,7 +177,6 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 							break
 						}
 					} else {
-						logrus.Warn(err)
 						if first {
 							utils.PrintError(fmt.Sprintf("Could not read file '%s!", src))
 						}
@@ -187,20 +186,21 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 				}
 				if !first {
 					fs.SetInodeAt(id, node)
-					utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
+					//utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
+					utils.PrintSuccess("OK")
 					fs.AddDirItem(DirectoryItem{
 						NodeID: id,
 						Name:   NameToDirName(GetTargetName(dst)),
 					}, fs.currentInodeID)
 				}
 			} else {
-				utils.PrintError(fmt.Sprintf("Could not find a file in the real FS at '%s'", src))
+				utils.PrintError("FILE NOT FOUND")
 			}
 		} else {
-			utils.PrintError(fmt.Sprintf("File '%s' already exists at '%s'", GetTargetName(dst), dst))
+			utils.PrintError(fmt.Sprintf("FILE '%s' ALREADY EXISTS AT '%s'", GetTargetName(dst), dst))
 		}
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' destination path not found", dst))
+		utils.PrintError("PATH NOT FOUND")
 	})
 }
 
@@ -307,4 +307,18 @@ func (fs *MyFileSystem) RemoveAtPath(path string) bool {
 	}, func() {
 	})
 	return result
+}
+
+func (fs *MyFileSystem) BadRemove(path string) {
+	tgtName := GetTargetName(path)
+	fs.VisitDirectoryByPathAndExecute(path, func() {
+		fs.faultyMode = true
+		if fs.RemoveDirItem(tgtName, fs.currentInodeID, true) {
+			utils.PrintSuccess("OK")
+		} else {
+			utils.PrintError("FILE NOT FOUND")
+		}
+		fs.faultyMode = false
+	}, func() {
+	})
 }

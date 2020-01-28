@@ -139,21 +139,26 @@ func (fs *MyFileSystem) RemoveDirItem(delete string, nodeId ID, removeData bool)
 		return false
 	}
 
-	nodeIdtoBeDeleted := items[deleteIndex].NodeID
+	nodeIdToBeDeleted := items[deleteIndex].NodeID
 	nodeToBeDeleted := fs.GetInodeAt(items[deleteIndex].NodeID)
 
 	if nodeToBeDeleted.IsDirectory {
-		if len(fs.ReadDirItems(nodeIdtoBeDeleted)) > 2 {
+		if len(fs.ReadDirItems(nodeIdToBeDeleted)) > 2 {
 			utils.PrintError("Cannot delete a directory that is not empty")
 			return false
 		}
-
 	}
 
 	if removeData {
-		fs.ShrinkInodeData(&nodeToBeDeleted, nodeIdtoBeDeleted, 0)
+		fs.ShrinkInodeData(&nodeToBeDeleted, nodeIdToBeDeleted, 0)
 	}
-	fs.ClearInodeById(nodeIdtoBeDeleted)
+	if !fs.faultyMode {
+		fs.ClearInodeById(nodeIdToBeDeleted)
+	} else {
+		nodeToBeDeleted.Direct2 = 0
+		fs.SetInodeAt(nodeIdToBeDeleted, nodeToBeDeleted)
+		utils.PrintHighlight(fmt.Sprintf("FAULTY MODE ENABLED FOR INODE OF ID=%d", nodeIdToBeDeleted))
+	}
 
 	if deleteIndex != len(items)-1 {
 		items[deleteIndex] = items[len(items)-1]

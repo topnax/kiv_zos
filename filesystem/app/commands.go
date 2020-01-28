@@ -35,8 +35,6 @@ var (
 
 	checkCommand = fsApp.Command("check", "Does a consistency check")
 
-	testCommand = fsApp.Command("test", "Prints the path to the current working directory")
-
 	infoCommand = fsApp.Command("info", "Prints information about the given file/directory")
 	infoTarget  = infoCommand.Arg("target", "File or directory to be inspected").Required().String()
 
@@ -53,6 +51,9 @@ var (
 
 	formatCommand     = fsApp.Command("format", "Initiates the PSEUDO fs by creating a file by the given name and formats it")
 	formatDesiredSize = formatCommand.Arg("size", "Size of the desired filesystem. Ex: '5MB'").Required().String()
+
+	badRmCommand = fsApp.Command("badrm", "Does a bad removal of an item")
+	badRmTarget  = badRmCommand.Arg("target", "File or directory to be inspected").Required().String()
 
 	exitCommand = fsApp.Command("exit", "Exits the program :)")
 )
