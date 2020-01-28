@@ -85,6 +85,12 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 		srcDirNodeId := fs.currentInodeID
 		srcDirItem := fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), srcTarget)
 		srcNodeId := srcDirItem.NodeID
+
+		if fs.GetInodeAt(srcNodeId).IsDirectory {
+			utils.PrintError("CANNOT MOVE A DIRECTORY")
+			return
+		}
+
 		if srcNodeId != -1 {
 			fs.currentInodeID = fallbackNodeId
 			// cd to destination
@@ -207,9 +213,13 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 					fs.SetInodeAt(id, node)
 					//utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
 					utils.PrintSuccess("OK")
+					name := GetTargetName(dst)
+					if strings.Trim(name, " ") == "" {
+						name = GetTargetName(src)
+					}
 					fs.AddDirItem(DirectoryItem{
 						NodeID: id,
-						Name:   NameToDirName(GetTargetName(dst)),
+						Name:   NameToDirName(GetTargetName(name)),
 					}, fs.currentInodeID)
 				}
 			} else {
@@ -274,18 +284,23 @@ func (fs *MyFileSystem) CreateNewDirectory(name string) {
 
 // ls command implementation
 func (fs MyFileSystem) ListDirectoryContent(name string) {
-	items := fs.ReadDirItems(fs.currentInodeID)
+	tgtName := GetTargetName(name)
+	fs.VisitDirectoryByPathAndExecute(name, func() {
+		items := fs.ReadDirItems(fs.currentInodeID)
 
-	item := fs.FindDirItemByName(items, name)
-	if item.NodeID != -1 {
-		if fs.GetInodeAt(item.NodeID).IsDirectory {
-			fs.ListDirectory(item.NodeID)
+		item := fs.FindDirItemByName(items, tgtName)
+		if item.NodeID != -1 {
+			if fs.GetInodeAt(item.NodeID).IsDirectory {
+				fs.ListDirectory(item.NodeID)
+			} else {
+				utils.PrintError(fmt.Sprintf("%s is not a directory", item.GetName()))
+			}
 		} else {
-			utils.PrintError(fmt.Sprintf("%s is not a directory", item.GetName()))
+			utils.PrintError(fmt.Sprintf("'%s' not found", name))
 		}
-	} else {
-		utils.PrintError(fmt.Sprintf("'%s' not found", name))
-	}
+	}, func() {
+		utils.PrintError("FILE NOT FOUND")
+	})
 }
 
 // cd command implementation

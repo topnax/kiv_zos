@@ -15,7 +15,9 @@ import (
 
 func Main(args []string, fs filesystem.FileSystem) {
 	log.SetLevel(log.WarnLevel)
-	args = append(args, "myfs")
+	if len(args) == 0 {
+		args = append(args, "myfs")
+	}
 	if len(args) > 0 {
 		fs.SetFilePath(args[0])
 
