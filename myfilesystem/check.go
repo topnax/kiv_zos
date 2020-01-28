@@ -7,10 +7,14 @@ import (
 	"unsafe"
 )
 
+// does the basic checking of file system's consistency
 func (fs *MyFileSystem) ConsistencyCheck() {
 	fs.CheckThatAllFilesBelongToADirectory()
 	fs.CheckThatFilesAreCorrectlyAllocated()
 }
+
+// checks whether files (nodes) are correctly allocated
+// Does the filesize correspond with the pointers written in the direct/indirect clusters?
 func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
 	foundFiles := NewIdSet()
 	fs.AddAllFiles(foundFiles, 0)
@@ -22,7 +26,7 @@ func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
 	// first indirect cluster
 	count += addressesPerCluster
 
-	// second indirect cluster
+	// second indirect clusters
 	count += addressesPerCluster * addressesPerCluster
 
 	freeIds := fs.FindFreeBitsInBitmap(int(fs.SuperBlock.InodeCount()), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize(), fs.SuperBlock.InodeCount())
@@ -60,6 +64,7 @@ func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
 	utils.PrintSuccess("OK - EACH INODE HAS CORRECT AMOUNT OF ALLOCATED CLUSTERS")
 }
 
+// traverses the file tree from the root node and finds all files. Then checks whether are inodes are inside some folder
 func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
 	foundFiles := NewIdSet()
 
@@ -68,6 +73,7 @@ func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
 		return
 	}
 
+	// finds all free inode ids
 	ids := fs.FindFreeBitsInBitmap(int(fs.SuperBlock.InodeCount()), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize(), fs.SuperBlock.InodeCount())
 
 	if len(ids)+len(foundFiles.List)+1 != +int(fs.SuperBlock.InodeCount()) {
@@ -78,6 +84,7 @@ func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
 	}
 }
 
+// adds all files found in the given node id to the passed ID set
 // returns false when a duplicate node is found
 func (fs *MyFileSystem) AddAllFiles(foundFiles *IDSet, nodeID ID) bool {
 	items := fs.ReadDirItems(nodeID)

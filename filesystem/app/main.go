@@ -106,6 +106,7 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 	}
 }
 
+// loads a batch of commands
 func loadCommands(path string, fs filesystem.FileSystem) {
 	file, err := os.Open(path)
 	if err == nil {

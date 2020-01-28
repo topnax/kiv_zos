@@ -19,28 +19,28 @@ func TestGetAndSet(t *testing.T) {
 	fs.SetInBitmap(true, 26, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize())
 	fs.SetInBitmap(true, 27, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize())
 
-	if !fs.GetInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @2")
 	}
-	if !fs.GetInBitmap(3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @3")
 	}
-	if !fs.GetInBitmap(4, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(4, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @4")
 	}
-	if !fs.GetInBitmap(6, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(6, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @6")
 	}
-	if !fs.GetInBitmap(18, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(18, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @18")
 	}
-	if !fs.GetInBitmap(25, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(25, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @25")
 	}
-	if !fs.GetInBitmap(26, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(26, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @26")
 	}
-	if !fs.GetInBitmap(27, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if !fs.GetBitInBitmap(27, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("wanted=SET got=FALSE @27")
 	}
 

@@ -2,6 +2,7 @@ package app
 
 import "gopkg.in/alecthomas/kingpin.v2"
 
+// definition of commands and their arguments
 var (
 	fsApp = kingpin.New("fs", "A semester project of KIV/ZOS, Stanislav Král 2020")
 

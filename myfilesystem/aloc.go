@@ -6,30 +6,35 @@ import (
 )
 
 const (
-	directAddresses = 5
+	directAddresses = 5 // number of direct addresses in a node
 	FileTooLarge    = -3
 	NoIndirect      = -2
 	FirstIndirect   = -1
 )
 
-func (fs *MyFileSystem) GetClusterPath(id int) (int, int) {
+// returns a cluster path by cluster index.
+// When the second returned value is NoIndirect, the first value represents index of the direct pointer to the cluster.
+// When the second returned value is FirstIndirect, the first value represents the index of the pointer in the first indirect cluster.
+// when the second returned value is not one of as stated above, the first value then represents the index of the pointer
+// in the indirect cluster which is index is the second value
+func (fs *MyFileSystem) GetClusterPath(index int) (int, int) {
 	const addressesPerCluster = ClusterSize / int(unsafe.Sizeof(Address(0)))
-	if id < directAddresses {
-		return id, NoIndirect
-	} else if id < addressesPerCluster+directAddresses {
-		return id - directAddresses, FirstIndirect
+	if index < directAddresses {
+		return index, NoIndirect
+	} else if index < addressesPerCluster+directAddresses {
+		return index - directAddresses, FirstIndirect
 	} else {
-		indirectId := (id - addressesPerCluster - directAddresses) / addressesPerCluster
+		indirectId := (index - addressesPerCluster - directAddresses) / addressesPerCluster
 		if indirectId >= addressesPerCluster {
 			return FileTooLarge, FileTooLarge
 		} else {
-			return (id - addressesPerCluster - directAddresses) % addressesPerCluster, indirectId
+			return (index - addressesPerCluster - directAddresses) % addressesPerCluster, indirectId
 		}
 	}
 }
 
+// reads the data of the given node, each cluster's data is passed to the function specified in the fx parameter
 func (fs *MyFileSystem) ReadDataFromInodeFx(inode PseudoInode, fx func(data []byte) bool) {
-
 	clusters := inode.FileSize / ClusterSize
 
 	for i := 0; Size(i) < clusters; i++ {
@@ -47,6 +52,7 @@ func (fs *MyFileSystem) ReadDataFromInodeFx(inode PseudoInode, fx func(data []by
 	}
 }
 
+// reads the whole content of inode and returns it as byte array
 func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode) []byte {
 	bytes := []byte{}
 
@@ -58,8 +64,8 @@ func (fs *MyFileSystem) ReadDataFromInode(inode PseudoInode) []byte {
 	return bytes
 }
 
+// writes the given data to the cluster of the given id
 func (fs *MyFileSystem) WriteDataToInode(inodeId ID, data []byte) bool {
-
 	inode := fs.GetInodeAt(inodeId)
 
 	clusters := len(data) / ClusterSize
@@ -71,9 +77,6 @@ func (fs *MyFileSystem) WriteDataToInode(inodeId ID, data []byte) bool {
 		if id < 0 {
 			return false
 		}
-		logrus.Infof("#%d, inode=%v", i, inode)
-		logrus.Infof("dir1=%v", inode.Direct1)
-		logrus.Infof("dir2=%v", inode.Direct2)
 	}
 
 	remainder := len(data) % ClusterSize
@@ -88,17 +91,13 @@ func (fs *MyFileSystem) WriteDataToInode(inodeId ID, data []byte) bool {
 	}
 
 	inode = fs.GetInodeAt(inodeId)
-
 	inode.FileSize = Size(len(data))
-
-	logrus.Infof("inode=%v", inode)
-	logrus.Infof("dir1=%v", inode.Direct1)
-	logrus.Infof("dir2=%v", inode.Direct2)
 
 	fs.SetInodeAt(inodeId, inode)
 	return true
 }
 
+// reads the one cluster of data from the given inode
 func (fs *MyFileSystem) ReadDataFromInodeAt(inode PseudoInode, clusterId int) [ClusterSize]byte {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 
@@ -113,6 +112,7 @@ func (fs *MyFileSystem) ReadDataFromInodeAt(inode PseudoInode, clusterId int) [C
 	}
 }
 
+// returns the cluster address based cluster index
 func (fs *MyFileSystem) GetClusterAddressByIndex(inode PseudoInode, clusterId int) Address {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
 
@@ -127,10 +127,12 @@ func (fs *MyFileSystem) GetClusterAddressByIndex(inode PseudoInode, clusterId in
 	}
 }
 
+// reads one cluster of data from the inode based on the given cluster index
 func (fs *MyFileSystem) ReadFromDirect(inode PseudoInode, clusterIndex int) [ClusterSize]byte {
 	return fs.GetClusterDataAtAddress(fs.GetDirectClusterAddressByIndex(inode, clusterIndex))
 }
 
+// returns the address of a cluster based on the index and a direct pointer
 func (fs *MyFileSystem) GetDirectClusterAddressByIndex(inode PseudoInode, clusterIndex int) Address {
 	inodeDirectPtrs := []Address{
 		inode.Direct1,
@@ -143,26 +145,30 @@ func (fs *MyFileSystem) GetDirectClusterAddressByIndex(inode PseudoInode, cluste
 	return inodeDirectPtrs[clusterIndex]
 }
 
+// reads data from the first indirect pointer based on the given index
 func (fs *MyFileSystem) ReadFromFirstIndirect(inode PseudoInode, clusterIndex int) [ClusterSize]byte {
 	return fs.GetClusterDataAtAddress(fs.GetIndirectClusterAddressByIndex(inode, clusterIndex))
 }
 
+// gets the address of the cluster based on the pointer in the first indirect point
 func (fs *MyFileSystem) GetIndirectClusterAddressByIndex(inode PseudoInode, clusterIndex int) Address {
 	return fs.GetCluster(inode.Indirect1).ReadAddress(ID(clusterIndex))
 }
 
+// reads data from the second indirect pointer based on the given index
 func (fs *MyFileSystem) ReadFromSecondIndirect(inode PseudoInode, clusterIndex int, indirectIndex int) [ClusterSize]byte {
 	return fs.GetClusterDataAtAddress(fs.GetSecondIndirectClusterAddressByIndex(inode, indirectIndex, clusterIndex))
 }
 
+// gets the address of the cluster based on the pointer in the second indirect point
 func (fs *MyFileSystem) GetSecondIndirectClusterAddressByIndex(inode PseudoInode, indirectIndex int, clusterIndex int) Address {
 	return fs.GetCluster(fs.GetCluster(inode.Indirect2).ReadId(ID(indirectIndex))).ReadAddress(ID(clusterIndex))
 }
 
+// adds one cluster of data to the given inode
 func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode *PseudoInode, inodeId ID, clusterId int) ID {
 	clusterIndex, indirectIndex := fs.GetClusterPath(clusterId)
-	logrus.Infof("StartAddData Inode Indirect1 addr %d", inode.Indirect1)
-	logrus.Infof("clusterIndex, indirectIndex %d <=> %d", clusterIndex, indirectIndex)
+
 	result := ID(-1)
 	if indirectIndex == NoIndirect {
 		result = fs.WriteToDirect(inode, clusterIndex, data)
@@ -173,17 +179,15 @@ func (fs *MyFileSystem) AddDataToInode(data [ClusterSize]byte, inode *PseudoInod
 	} else {
 		return -1
 	}
-	logrus.Infof("EndAddData Inode Direct addr %d", inode.Indirect1)
-	logrus.Infof("EndAddData Inode Indirect1 addr %d", inode.Indirect1)
-	logrus.Infof("EndAddData Inode Indirect2 addr %d", inode.Indirect2)
-	logrus.Infof("EndAddData Inode Indirect2 id %d", inodeId)
+
 	if indirectIndex == NoIndirect || (indirectIndex == FirstIndirect && clusterIndex == 0) || (indirectIndex == 0 || clusterIndex == 0) {
 		fs.SetInodeAt(inodeId, *inode)
 	}
-	logrus.Infof("EndAddData ReadInode Indirect2 id %d", fs.GetInodeAt(inodeId).Indirect2)
+
 	return result
 }
 
+// writes data to the direct pointer
 func (fs *MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data [ClusterSize]byte) ID {
 	inodeDirectPtrs := []*Address{
 		&inode.Direct1,
@@ -195,9 +199,6 @@ func (fs *MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data
 
 	clusterId := fs.AddCluster(data)
 
-	logrus.Infof("ClusterContent rn %b", fs.GetCluster(clusterId).ReadData())
-	logrus.Infof("ADding id %d %d", clusterId, clusterIndex)
-
 	if clusterId > -1 {
 		*(inodeDirectPtrs[clusterIndex]) = fs.GetClusterAddress(clusterId)
 	}
@@ -205,10 +206,9 @@ func (fs *MyFileSystem) WriteToDirect(inode *PseudoInode, clusterIndex int, data
 	return clusterId
 }
 
+// writes data to the a cluster that is accessed by the an indirect pointer
 func (fs *MyFileSystem) WriteDataToIndirectCluster(cluster Cluster, clusterIndex int, data [ClusterSize]byte) ID {
-	logrus.Infof("test")
 	clusterId := fs.AddCluster(data)
-	logrus.Infof("WriteDataToIndirectCluster in found %d", clusterId)
 	if clusterId > -1 {
 		cluster.WriteAddress(fs.GetClusterAddress(clusterId), ID(clusterIndex))
 	}
@@ -216,6 +216,7 @@ func (fs *MyFileSystem) WriteDataToIndirectCluster(cluster Cluster, clusterIndex
 	return clusterId
 }
 
+// writes data to the a cluster that is accessed by the first indirect pointer
 func (fs *MyFileSystem) WriteDataToTheFirstIndirectCluster(inode *PseudoInode, clusterIndex int, data [ClusterSize]byte) ID {
 	var cluster Cluster
 	if clusterIndex == 0 {
@@ -235,6 +236,7 @@ func (fs *MyFileSystem) WriteDataToTheFirstIndirectCluster(inode *PseudoInode, c
 	return fs.WriteDataToIndirectCluster(cluster, clusterIndex, data)
 }
 
+// writes data to the second indirect cluster
 func (fs *MyFileSystem) WriteDataToSecondIndirectCluster(inode *PseudoInode, clusterIndex int, indirectIndex int, data [ClusterSize]byte) ID {
 	var secondIndirectCluster Cluster
 	if clusterIndex == 0 && indirectIndex == 0 {
@@ -274,23 +276,25 @@ func (fs *MyFileSystem) WriteDataToSecondIndirectCluster(inode *PseudoInode, clu
 	return fs.WriteDataToIndirectCluster(indirectCluster, clusterIndex, data)
 }
 
+// shrinks the data of the inode, removing all allocated clusters
 func (fs *MyFileSystem) ShrinkInodeData(inode *PseudoInode, inodeId ID, desiredSize Size) {
 	tbr := GetClusterCountToBeRemoved(inode.FileSize, desiredSize)
 	clusterCount := GetUsedClusterCount(inode.FileSize)
 	for i := 0; i < tbr; i++ {
+		// each address that is to be removed, free the cluster
 		address := fs.GetClusterAddressByIndex(*inode, int(clusterCount)-i-1)
 		fs.ClearClusterById(fs.GetClusterId(address))
 	}
 }
 
+// computes the count of clusters to be removed based on the current and target size
 func GetClusterCountToBeRemoved(currentSize Size, targetSize Size) int {
 	currCount := GetUsedClusterCount(currentSize)
-
 	tgtCount := GetUsedClusterCount(targetSize)
-
 	return int(currCount - tgtCount)
 }
 
+// returns an array of addresses that the inode uses to store data
 func (fs MyFileSystem) GetUsedClusterAddresses(inode PseudoInode) []Address {
 	var ids []Address
 	count := GetUsedClusterCount(inode.FileSize)

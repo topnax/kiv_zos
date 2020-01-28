@@ -530,7 +530,7 @@ func TestShrinkData(t *testing.T) {
 
 	fs.ShrinkInodeData(&node, id, 2000)
 
-	if fs.GetInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if fs.GetBitInBitmap(2, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("The second cluster ID should be free")
 	}
 
@@ -556,13 +556,13 @@ func TestShrinkDataWhole(t *testing.T) {
 
 	fs.ShrinkInodeData(&node, id, 0)
 
-	if fs.GetInBitmap(0, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if fs.GetBitInBitmap(0, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("The first cluster ID should be free")
 	}
-	if fs.GetInBitmap(1, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if fs.GetBitInBitmap(1, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("The second cluster ID should be free")
 	}
-	if fs.GetInBitmap(3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
+	if fs.GetBitInBitmap(3, fs.SuperBlock.ClusterBitmapStartAddress, fs.SuperBlock.ClusterBitmapSize()) {
 		t.Errorf("The third cluster ID should be free")
 	}
 

@@ -63,15 +63,15 @@ func TestGetInBitmap(t *testing.T) {
 
 	fs.File.Write([]byte{b})
 
-	if !fs.GetInBitmap(16, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterCount)) {
+	if !fs.GetBitInBitmap(16, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterCount)) {
 		t.Error("Wanted SET, got EMPTY at 17")
 	}
 
-	if !fs.GetInBitmap(17, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterCount)) {
+	if !fs.GetBitInBitmap(17, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterCount)) {
 		t.Error("Wanted SET, got EMPTY at 18")
 	}
 
-	if !fs.GetInBitmap(19, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterCount)) {
+	if !fs.GetBitInBitmap(19, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterCount)) {
 		t.Error("Wanted SET, got EMPTY at 20")
 	}
 

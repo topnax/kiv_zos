@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	ReadSize = 4000
+	ReadSize = 4000 // how many bytes will be read from the bitmap
 )
 
+// sets a bit in the given bitmap
 func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress Address, bitmapSize Size) {
 	b := fs.GetByteByBitInBitmap(bitPosition, bitmapAddress, bitmapSize)
 
-	// which byte will be
+	// which byte will be accessed
 	dstBytePosition := int(math.Floor(float64(bitPosition / 8)))
 	dstBit := 7 - (bitPosition % 8)
 
@@ -48,6 +49,7 @@ func (fs *MyFileSystem) SetInBitmap(value bool, bitPosition int32, bitmapAddress
 	}
 }
 
+// returns a byte based on the bit position
 func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Address, bitmapSize Size) byte {
 	if bitPosition >= int32(bitmapSize*8) {
 		panic(fmt.Sprintf("Trying to set a bit in outside of a bitmap position=%d, Start address=%d, bitmapSize=%d", bitPosition, bitmapAddress, bitmapSize))
@@ -77,7 +79,8 @@ func (fs *MyFileSystem) GetByteByBitInBitmap(bitPosition int32, bitmapAddress Ad
 	return b[0]
 }
 
-func (fs *MyFileSystem) GetInBitmap(bitPosition int32, bitmapAddress Address, bitmapSize Size) bool {
+// gets a bit in a bitmap
+func (fs *MyFileSystem) GetBitInBitmap(bitPosition int32, bitmapAddress Address, bitmapSize Size) bool {
 	b := fs.GetByteByBitInBitmap(bitPosition, bitmapAddress, bitmapSize)
 
 	dstBit := 7 - (bitPosition % 8)
@@ -85,6 +88,7 @@ func (fs *MyFileSystem) GetInBitmap(bitPosition int32, bitmapAddress Address, bi
 	return utils.HasBit(b, int8(dstBit))
 }
 
+// finds a free bit in a bitmap
 func (fs *MyFileSystem) FindFreeBitInBitmap(bitmapAddress Address, length Size) ID {
 	id := ID(0)
 	bytes := make([]byte, 1)
@@ -110,6 +114,7 @@ func (fs *MyFileSystem) FindFreeBitInBitmap(bitmapAddress Address, length Size) 
 	return -1
 }
 
+// tries to find the desired amount of bits in the given bitmap
 func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address, bitmapSize Size, bitCount Size) []ID {
 	if desired == -1 {
 		desired = ReadSize * 8
@@ -126,6 +131,7 @@ func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address,
 	currentAddr := bitmapAddress
 	i := 0
 	for currentAddr < bitmapAddress+Address(bitmapSize) {
+		// read the bitmap
 		bytes := make([]byte, utils.Min(ReadSize, int(bitmapSize)))
 
 		read, err := fs.File.Read(bytes)
@@ -135,10 +141,12 @@ func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address,
 			panic("Could not read")
 		}
 
+		// try to find the desired amount of bits in the read bytes
 		ids = append(ids, FindFreeBitsInBytes(ID(utils.Min(desired-len(ids), read*8)), bytes, i*ReadSize*8, int(bitCount))...)
 
 		idsLen := len(ids)
 		if len(ids) >= desired {
+			// check for excess bits
 			for i := 0; i < utils.Min(8, idsLen); i++ {
 				// to be removed
 				tbr := idsLen - i - 1
@@ -156,6 +164,7 @@ func (fs *MyFileSystem) FindFreeBitsInBitmap(desired int, bitmapAddress Address,
 	return ids
 }
 
+// finds free bits in the given bytes
 func FindFreeBitsInBytes(desired ID, bytes []byte, offset int, bitCount int) []ID {
 	ids := []ID{}
 	found := ID(0)

@@ -54,7 +54,7 @@ func TestClearCluster(t *testing.T) {
 	fs.SetClusterAt(myfilesystem.ID(5), [myfilesystem.ClusterSize]byte{10, 10, 10, 12, 15, 18})
 	fs.ClearInodeById(5)
 
-	fs.GetInBitmap(5, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterStartAddress-fs.SuperBlock.ClusterBitmapStartAddress))
+	fs.GetBitInBitmap(5, fs.SuperBlock.ClusterBitmapStartAddress, myfilesystem.Size(fs.SuperBlock.ClusterStartAddress-fs.SuperBlock.ClusterBitmapStartAddress))
 
 	fs.Close()
 }
