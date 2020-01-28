@@ -7,6 +7,7 @@ import (
 	"unsafe"
 )
 
+// finds an free inode ID
 func (fs *MyFileSystem) FindFreeInodeID() ID {
 	return fs.FindFreeBitInBitmap(fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeCount())
 }
@@ -25,6 +26,7 @@ func (fs *MyFileSystem) AddInode(inode PseudoInode) ID {
 	return -1
 }
 
+// sets the given inode at the given ID
 func (fs *MyFileSystem) SetInodeAt(id ID, inode PseudoInode) {
 	inodeAddress := fs.GetInodeAddress(id)
 	log.Infof("Setting an inode at address %d", inodeAddress)
@@ -43,6 +45,7 @@ func (fs *MyFileSystem) SetInodeAt(id ID, inode PseudoInode) {
 	}
 }
 
+// reads an inode at the given ID
 func (fs *MyFileSystem) GetInodeAt(id ID) PseudoInode {
 	inodeAddress := fs.GetInodeAddress(id)
 
@@ -53,7 +56,7 @@ func (fs *MyFileSystem) GetInodeAt(id ID) PseudoInode {
 		err = binary.Read(fs.File, binary.LittleEndian, &inode)
 		if err != nil {
 			log.Error(err)
-			panic("could not binary write")
+			panic("could not binary read")
 		} else {
 			return inode
 		}
@@ -63,6 +66,7 @@ func (fs *MyFileSystem) GetInodeAt(id ID) PseudoInode {
 	}
 }
 
+// clears an inode by ID
 func (fs *MyFileSystem) ClearInodeById(id ID) {
 	inodeAddress := fs.GetInodeAddress(id)
 
@@ -80,6 +84,7 @@ func (fs *MyFileSystem) ClearInodeById(id ID) {
 	}
 }
 
+// converts inode ID to an inode address
 func (fs *MyFileSystem) GetInodeAddress(id ID) Address {
 	return fs.SuperBlock.InodeStartAddress + Address(Size(id)*Size(unsafe.Sizeof(PseudoInode{})))
 }

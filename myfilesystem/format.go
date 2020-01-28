@@ -16,6 +16,7 @@ const (
 	//ClusterSize = 2048
 )
 
+// formats the file to the desired fs size
 func (fs *MyFileSystem) Format(desiredFsSize int) {
 	log.Infof("About to format a volume of desiredFsSize %d Bytes, %d kB, %d MB", desiredFsSize, desiredFsSize/ClusterSize, desiredFsSize/ClusterSize/ClusterSize)
 
@@ -25,6 +26,7 @@ func (fs *MyFileSystem) Format(desiredFsSize int) {
 		ClusterSize:      ClusterSize,
 	}
 
+	// initiates the superblock
 	fs.SuperBlock.init(desiredFsSize)
 
 	fs.SuperBlock.info()

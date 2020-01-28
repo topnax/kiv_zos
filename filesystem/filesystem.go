@@ -2,7 +2,7 @@ package filesystem
 
 type FileSystem interface {
 	Format(size int)
-	FilePath(filePath string)
+	SetFilePath(filePath string)
 	Load() bool
 	IsLoaded() bool
 	Close()

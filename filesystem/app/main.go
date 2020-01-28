@@ -17,7 +17,7 @@ func Main(args []string, fs filesystem.FileSystem) {
 	log.SetLevel(log.WarnLevel)
 	args = append(args, "myfs")
 	if len(args) > 0 {
-		fs.FilePath(args[0])
+		fs.SetFilePath(args[0])
 
 		log.Infof("File path set to '%s'", args[0])
 		if fs.Load() {

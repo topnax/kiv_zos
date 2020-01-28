@@ -40,14 +40,17 @@ func (superBlock SuperBlock) info() {
 	log.Infoln("Clust er Start address:", superBlock.ClusterStartAddress)
 }
 
+// calculates the inode count
 func (superBlock SuperBlock) InodeCount() Size {
 	return Size(superBlock.ClusterBitmapStartAddress-superBlock.InodeStartAddress) / Size(unsafe.Sizeof(PseudoInode{}))
 }
 
+// calculates the inode bitmap size
 func (superBlock SuperBlock) InodeBitmapSize() Size {
 	return Size(superBlock.InodeStartAddress - superBlock.InodeBitmapStartAddress)
 }
 
+// calculates the cluster bitmap size
 func (superBlock SuperBlock) ClusterBitmapSize() Size {
 	return Size(superBlock.ClusterStartAddress - superBlock.ClusterBitmapStartAddress)
 }
@@ -70,6 +73,7 @@ type DirectoryItem struct {
 	Name   [maxFileNameLength]byte
 }
 
+// returns the dir item name
 func (dirItem DirectoryItem) GetName() string {
 	str := string(dirItem.Name[:])
 	str = strings.Replace(str, string(byte(0)), "", -1)

@@ -5,6 +5,7 @@ import "fmt"
 func PrintError(format string) {
 	fmt.Printf("\x1b[31;1m" + format + "\x1b[0m\n")
 }
+
 func PrintSuccess(format string) {
 	fmt.Printf("\x1b[32;1m" + format + "\x1b[0m\n")
 }

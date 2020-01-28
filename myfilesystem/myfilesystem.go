@@ -18,10 +18,12 @@ type MyFileSystem struct {
 	RealMode           bool
 }
 
+// sets whether the fs is in a real mode
 func (fs *MyFileSystem) SetRealMode(realMode bool) {
 	fs.RealMode = realMode
 }
 
+// closes the file system
 func (fs *MyFileSystem) Close() {
 	if fs.File != nil {
 		err := fs.File.Close()
@@ -33,11 +35,14 @@ func (fs *MyFileSystem) Close() {
 	}
 }
 
+// returns true when the fs is loeaded
 func (fs *MyFileSystem) IsLoaded() bool {
 	return fs.File != nil
 }
 
+// loads the file system
 func (fs *MyFileSystem) Load() bool {
+	fs.File = nil
 	file, err := os.OpenFile(fs.filePath, os.O_RDWR, os.ModePerm)
 	log.Infof("About to load a filesystem at path of '%s'", fs.filePath)
 	if err == nil {
@@ -65,7 +70,8 @@ func (fs *MyFileSystem) Load() bool {
 	return false
 }
 
-func (fs *MyFileSystem) FilePath(filePath string) {
+// sets the file path
+func (fs *MyFileSystem) SetFilePath(filePath string) {
 	fs.filePath = filePath
 }
 
