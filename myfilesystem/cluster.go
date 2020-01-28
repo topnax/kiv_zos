@@ -29,9 +29,6 @@ func (fs *MyFileSystem) FindFreeClusterID() ID {
 
 func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 	freeID := fs.FindFreeClusterID()
-	if freeID == 1939 {
-		log.Warnf("")
-	}
 	log.Infof("Free id=%d", freeID)
 	if freeID != -1 {
 		// mark in data block bitmap
@@ -40,8 +37,6 @@ func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 		// write the actual inode at its address
 		fs.SetClusterAt(freeID, bytes)
 		return freeID
-	} else {
-		panic("Not found a free id")
 	}
 	log.Errorln("No free cluster found")
 	return -1

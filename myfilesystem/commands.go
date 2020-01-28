@@ -27,6 +27,10 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 				} else {
 					dstNode := PseudoInode{}
 					dstNodeId := fs.AddInode(dstNode)
+					if dstNodeId < 0 {
+						utils.PrintError("Not enough inodes, aborting...")
+						return
+					}
 					fs.AddDirItem(DirectoryItem{
 						NodeID: dstNodeId,
 						Name:   NameToDirName(dstTarget),
@@ -34,11 +38,17 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 					srcNode := fs.GetInodeAt(srcNodeId)
 					clusterIndex := 0
 					var clusterData [ClusterSize]byte
-					fs.ReadDataFromInodeFx(srcNode, func(data []byte) {
+					fs.ReadDataFromInodeFx(srcNode, func(data []byte) bool {
 						copy(clusterData[:], data)
-						fs.AddDataToInode(clusterData, &dstNode, dstNodeId, clusterIndex)
+						clusterId := fs.AddDataToInode(clusterData, &dstNode, dstNodeId, clusterIndex)
+						if clusterId < 0 {
+							utils.PrintError("Not enough disk space (clusters), aborting...")
+							fs.RemoveDirectory(GetTargetName(dst))
+							return false
+						}
 						clusterIndex++
 						dstNode.FileSize += Size(len(data))
+						return true
 					})
 					fs.SetInodeAt(dstNodeId, dstNode)
 					moved = true
@@ -106,12 +116,14 @@ func (fs *MyFileSystem) CopyOut(src string, dst string) {
 			if _, err := os.Stat(dst); os.IsNotExist(err) {
 				file, err := os.Create(dst)
 				if err == nil {
-					fs.ReadDataFromInodeFx(fs.GetInodeAt(id), func(data []byte) {
+					fs.ReadDataFromInodeFx(fs.GetInodeAt(id), func(data []byte) bool {
 						_, err = file.Write(data)
 						if err != nil {
 							logrus.Error(err)
 							utils.PrintError(fmt.Sprintf("An error occurred while writing data to '%s' in the real fs from '%s'.", dst, src))
+							return false
 						}
+						return true
 					})
 				} else {
 					logrus.Error(err)
@@ -144,14 +156,21 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 						if read > 0 {
 							if first {
 								id = fs.AddInode(node)
+								if id < 0 {
+									utils.PrintError("Not enough inodes, aborting...")
+									return
+								}
 								first = false
 							}
-							if id >= 0 {
-								fs.AddDataToInode(bytes, &node, id, clusterIndex)
+							clusterId := fs.AddDataToInode(bytes, &node, id, clusterIndex)
+
+							if clusterId >= 0 {
 								node.FileSize += Size(read)
 							} else {
-								utils.PrintError("Not enough inodes, aborting")
-								break
+								utils.PrintError("Not enough disk space (clusters), aborting...")
+								fs.ShrinkInodeData(&node, id, 0)
+								fs.ClearInodeById(id)
+								return
 							}
 						} else {
 							break
@@ -194,8 +213,9 @@ func (fs MyFileSystem) Print(path string) {
 }
 
 func (fs MyFileSystem) PrintContent(node PseudoInode) {
-	fs.ReadDataFromInodeFx(node, func(data []byte) {
+	fs.ReadDataFromInodeFx(node, func(data []byte) bool {
 		fmt.Printf("%s", data)
+		return true
 	})
 	fmt.Print("\n")
 }
