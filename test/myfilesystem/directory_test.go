@@ -221,7 +221,7 @@ func TestRemoveDirectoryItems(t *testing.T) {
 	fs.AddDirItem(dirItem2, nodeId)
 	fs.AddDirItem(dirItem3, nodeId)
 
-	fs.RemoveDirItem(dirItem3.GetName(), nodeId)
+	fs.RemoveDirItem(dirItem3.GetName(), nodeId, false)
 
 	items := fs.ReadDirItems(nodeId)
 
@@ -258,7 +258,7 @@ func TestRemoveDirectoryItems(t *testing.T) {
 	}
 
 	fs.AddDirItem(dirItem4, nodeId)
-	fs.RemoveDirItem(dirItem2.GetName(), nodeId)
+	fs.RemoveDirItem(dirItem2.GetName(), nodeId, false)
 	items = fs.ReadDirItems(nodeId)
 
 	if len(items) != 3 {

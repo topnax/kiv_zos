@@ -114,7 +114,7 @@ func (fs *MyFileSystem) GetClusterAddressByIndex(inode PseudoInode, clusterId in
 	} else if indirectIndex == FirstIndirect {
 		return fs.GetIndirectClusterAddressByIndex(inode, clusterIndex)
 	} else if indirectIndex != FileTooLarge {
-		return fs.GetSecondIndirectClusterAddressByIndex(inode, clusterIndex, indirectIndex)
+		return fs.GetSecondIndirectClusterAddressByIndex(inode, indirectIndex, clusterIndex)
 	} else {
 		panic("Could not read out of the bounds")
 	}
