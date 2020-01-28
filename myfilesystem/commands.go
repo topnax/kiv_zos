@@ -315,6 +315,7 @@ func (fs *MyFileSystem) ChangeDirectory(path string) {
 	}
 }
 
+// prints basic information about the target at the path
 func (fs *MyFileSystem) Info(path string) {
 	tgtName := GetTargetName(path)
 	fs.VisitDirectoryByPathAndExecute(path, func() {
