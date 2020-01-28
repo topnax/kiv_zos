@@ -49,7 +49,7 @@ func TestGetAndSet(t *testing.T) {
 
 func TestFindFindFreeBitsInBytes(t *testing.T) {
 
-	ids := myfilesystem.FindFreeBitsInBytes(16, []byte{0x0A, 0, 255, 0xD7}, 0)
+	ids := myfilesystem.FindFreeBitsInBytes(16, []byte{0x0A, 0, 255, 0xD7}, 0, 1000)
 
 	if len(ids) != 16 {
 		t.Fatalf("The size of found free bits should be 16. got=%d", len(ids))

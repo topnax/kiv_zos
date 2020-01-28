@@ -85,6 +85,8 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 		fs.Info(*infoTarget)
 	case catCommand.FullCommand():
 		fs.Print(*catDirName)
+	case checkCommand.FullCommand():
+		fs.ConsistencyCheck()
 	case rmDirCommand.FullCommand():
 		fs.RemoveDirectory(*rmDirTarget)
 	case cpCommand.FullCommand():

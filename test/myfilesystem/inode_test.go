@@ -75,7 +75,15 @@ func TestClearInode(t *testing.T) {
 	}
 
 	fs.SetInodeAt(myfilesystem.ID(5), inode)
+	fs.SetInBitmap(true, int32(5), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize())
+
+	if !fs.GetInBitmap(5, fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize()) {
+		t.Errorf("Fifth bit should be set")
+	}
 	fs.ClearInodeById(5)
+	if fs.GetInBitmap(5, fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize()) {
+		t.Errorf("Fifth bit should not be set")
+	}
 
 	_, _ = fs.File.Seek(int64(fs.GetInodeAddress(5)), io.SeekStart)
 

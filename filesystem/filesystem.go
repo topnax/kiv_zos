@@ -10,6 +10,7 @@ type FileSystem interface {
 	CurrentPath() string
 	CreateNewDirectory(name string)
 	ChangeDirectory(path string)
+	ConsistencyCheck()
 	ListDirectoryContent(name string)
 	Info(path string)
 	Print(path string)

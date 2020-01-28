@@ -66,7 +66,7 @@ func (fs *MyFileSystem) GetInodeAt(id ID) PseudoInode {
 func (fs *MyFileSystem) ClearInodeById(id ID) {
 	inodeAddress := fs.GetInodeAddress(id)
 
-	fs.SetInBitmap(false, int32(id), inodeAddress, fs.SuperBlock.InodeBitmapSize())
+	fs.SetInBitmap(false, int32(id), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize())
 	_, err := fs.File.Seek(int64(inodeAddress), io.SeekStart)
 	if err == nil {
 		_, err = fs.File.Write(make([]byte, unsafe.Sizeof(PseudoInode{})))

@@ -33,6 +33,8 @@ var (
 
 	pwdCommand = fsApp.Command("pwd", "Prints the path to the current working directory")
 
+	checkCommand = fsApp.Command("check", "Does a consistency check")
+
 	testCommand = fsApp.Command("test", "Prints the path to the current working directory")
 
 	infoCommand = fsApp.Command("info", "Prints information about the given file/directory")
