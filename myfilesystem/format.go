@@ -102,7 +102,7 @@ func (superBlock *SuperBlock) init(desiredFsSize int) {
 	superBlock.InodeStartAddress = superBlock.InodeBitmapStartAddress + Address(inodeCount)
 
 	superBlock.ClusterBitmapStartAddress = superBlock.InodeStartAddress + Address(inodeCount*Size(unsafe.Sizeof(PseudoInode{})))
-	superBlock.ClusterStartAddress = superBlock.ClusterBitmapStartAddress + Address(clusterCount)
+	superBlock.ClusterStartAddress = superBlock.ClusterBitmapStartAddress + Address(math.Ceil(float64(clusterCount)/8))
 
 	log.Infoln("Calculated inode count:", superBlock.InodeCount())
 

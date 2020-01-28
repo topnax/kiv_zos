@@ -29,6 +29,9 @@ func (fs *MyFileSystem) FindFreeClusterID() ID {
 
 func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 	freeID := fs.FindFreeClusterID()
+	if freeID == 1939 {
+		log.Warnf("")
+	}
 	log.Infof("Free id=%d", freeID)
 	if freeID != -1 {
 		// mark in data block bitmap
@@ -48,7 +51,7 @@ func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	clusterAddress := fs.GetClusterAddress(id)
 
 	log.Infof("SetClusterAt writing to address=%d for ID of %d", clusterAddress, id)
-	log.Infof("written %b", data)
+	//log.Infof("written %b", data)
 	_, err := fs.File.Seek(int64(clusterAddress), io.SeekStart)
 
 	if err == nil {
