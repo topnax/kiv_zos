@@ -72,7 +72,7 @@ func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
 
 	if len(ids)+len(foundFiles.List)+1 != +int(fs.SuperBlock.InodeCount()) {
 		logrus.Infof("%d total found nodes, but %d found used in the bitmap.", len(foundFiles.List)+1, int(fs.SuperBlock.InodeCount())-len(ids))
-		utils.PrintError("FOUND ONE OR MORE FILES THAT DO NOT BELONG IN A DIRECTORY")
+		utils.PrintError("FOUND ONE OR MORE FILES THAT DO NOT BELONG IN ANY DIRECTORY")
 	} else {
 		utils.PrintSuccess("OK - EVERY FILE BELONGS IN A DIRECTORY")
 	}

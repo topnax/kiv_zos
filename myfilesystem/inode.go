@@ -21,7 +21,7 @@ func (fs *MyFileSystem) AddInode(inode PseudoInode) ID {
 		fs.SetInodeAt(freeInodeID, inode)
 		return freeInodeID
 	}
-	log.Errorln("No free inode found")
+	log.Warnln("No free inode found")
 	return -1
 }
 

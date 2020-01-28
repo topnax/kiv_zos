@@ -8,3 +8,10 @@ ls
 cd ..
 mkdir slozka2
 ls
+incp test.gif mujgif
+mv mujgif slozka2/
+cp slozka2/mujgif /
+cp mujgif novejgif
+outcp novejgif novejgif.out
+check
+ls

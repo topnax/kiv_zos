@@ -38,7 +38,7 @@ func (fs *MyFileSystem) AddCluster(bytes [ClusterSize]byte) ID {
 		fs.SetClusterAt(freeID, bytes)
 		return freeID
 	}
-	log.Errorln("No free cluster found")
+	log.Warnln("No free cluster found")
 	return -1
 }
 
@@ -46,7 +46,6 @@ func (fs *MyFileSystem) SetClusterAt(id ID, data [ClusterSize]byte) {
 	clusterAddress := fs.GetClusterAddress(id)
 
 	log.Infof("SetClusterAt writing to address=%d for ID of %d", clusterAddress, id)
-	//log.Infof("written %b", data)
 	_, err := fs.File.Seek(int64(clusterAddress), io.SeekStart)
 
 	if err == nil {

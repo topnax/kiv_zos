@@ -23,12 +23,12 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 					dstTarget = srcTarget
 				}
 				if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID != -1 {
-					utils.PrintError(fmt.Sprintf("Cannot overwrite '%s' that exists at '%s'", dstTarget, dst))
+					utils.PrintError(fmt.Sprintf("CANNOT OVERWRITE '%s' THAT EXISTS AT '%s'", dstTarget, dst))
 				} else {
 					dstNode := PseudoInode{}
 					dstNodeId := fs.AddInode(dstNode)
 					if dstNodeId < 0 {
-						utils.PrintError("Not enough inodes, aborting...")
+						utils.PrintError("NOT ENOUGH INODES, ABORTING")
 						return
 					}
 					fs.AddDirItem(DirectoryItem{
@@ -42,7 +42,7 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 						copy(clusterData[:], data)
 						clusterId := fs.AddDataToInode(clusterData, &dstNode, dstNodeId, clusterIndex)
 						if clusterId < 0 {
-							utils.PrintError("Not enough disk space (clusters), aborting...")
+							utils.PrintError("NOT ENOUGH SPACE (CLUSTERS), ABORTING")
 							fs.RemoveAtPath(GetTargetName(dst))
 							moved = false
 							return false
@@ -55,17 +55,17 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 					moved = true
 				}
 			}, func() {
-				utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+				utils.PrintError("PATH NOT FOUND")
 			})
 
 			if moved {
 				utils.PrintSuccess("OK")
 			}
 		} else {
-			utils.PrintError(fmt.Sprintf("File '%s' does not exist exists at '%s'", srcTarget, src))
+			utils.PrintError("FILE NOT FOUND")
 		}
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+		utils.PrintError("FILE NOT FOUND")
 	})
 }
 
@@ -85,7 +85,7 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 					dstTarget = srcTarget
 				}
 				if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID != -1 {
-					utils.PrintError(fmt.Sprintf("Cannot overwrite '%s' that exists at '%s'", dstTarget, dst))
+					utils.PrintError(fmt.Sprintf("CANNOT OVERWRITE '%s' THAT EXISTS AT '%s'", dstTarget, dst))
 				} else {
 					dstNodeId := fs.AddInode(fs.GetInodeAt(srcNodeId))
 					fs.AddDirItem(DirectoryItem{
@@ -95,7 +95,7 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 					moved = true
 				}
 			}, func() {
-				utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+				utils.PrintError("PATH NOT FOUND")
 			})
 
 			if moved {
@@ -103,10 +103,10 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 				utils.PrintSuccess("OK")
 			}
 		} else {
-			utils.PrintError(fmt.Sprintf("File '%s' does not exist exists at '%s'", srcTarget, src))
+			utils.PrintError("SOURCE NOT FOUND")
 		}
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+		utils.PrintError("SOURCE NOT FOUND")
 	})
 }
 
@@ -126,6 +126,7 @@ func (fs *MyFileSystem) CopyOut(src string, dst string) {
 						}
 						return true
 					})
+					utils.PrintSuccess("OK")
 				} else {
 					logrus.Error(err)
 					utils.PrintError(fmt.Sprintf("An error occurred while opening '%s' in the real fs.", dst))
@@ -134,10 +135,10 @@ func (fs *MyFileSystem) CopyOut(src string, dst string) {
 				utils.PrintError(fmt.Sprintf("'%s' already exists in the real fs. Please use a different file", dst))
 			}
 		} else {
-			utils.PrintError(fmt.Sprintf("File '%s' does not exist exists at '%s'", GetTargetName(src), src))
+			utils.PrintError("FILE NOT FOUND")
 		}
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' source path not found", src))
+		utils.PrintError("FILE NOT FOUND")
 	})
 }
 
@@ -158,7 +159,7 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 							if first {
 								id = fs.AddInode(node)
 								if id < 0 {
-									utils.PrintError("Not enough inodes, aborting...")
+									utils.PrintError("NOT ENOUGH INODES, ABORTING")
 									return
 								}
 								first = false
@@ -168,7 +169,7 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 							if clusterId >= 0 {
 								node.FileSize += Size(read)
 							} else {
-								utils.PrintError("Not enough disk space (clusters), aborting...")
+								utils.PrintError("NOT ENOUGH SPACE (CLUSTERS), ABORTING")
 								fs.ShrinkInodeData(&node, id, 0)
 								fs.ClearInodeById(id)
 								return
@@ -209,7 +210,7 @@ func (fs MyFileSystem) Print(path string) {
 	fs.VisitDirectoryByPathAndExecute(path, func() {
 		fs.PrintContent(fs.GetInodeAt(fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), tgtName).NodeID))
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' not found", path))
+		utils.PrintError(fmt.Sprintf("FILE NOT FOUND", path))
 	})
 }
 
@@ -284,9 +285,14 @@ func (fs *MyFileSystem) ChangeDirectory(path string) {
 func (fs *MyFileSystem) Info(path string) {
 	tgtName := GetTargetName(path)
 	fs.VisitDirectoryByPathAndExecute(path, func() {
-		fs.PrintInfo(fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), tgtName).NodeID)
+		id := fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), tgtName).NodeID
+		if id > -1 {
+			fs.PrintInfo(id)
+		} else {
+			utils.PrintError("FILE NOT FOUND")
+		}
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' not found", path))
+		utils.PrintError("FILE NOT FOUND")
 	})
 }
 
