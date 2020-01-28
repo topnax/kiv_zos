@@ -43,7 +43,8 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 						clusterId := fs.AddDataToInode(clusterData, &dstNode, dstNodeId, clusterIndex)
 						if clusterId < 0 {
 							utils.PrintError("Not enough disk space (clusters), aborting...")
-							fs.RemoveDirectory(GetTargetName(dst))
+							fs.RemoveAtPath(GetTargetName(dst))
+							moved = false
 							return false
 						}
 						clusterIndex++
@@ -289,15 +290,21 @@ func (fs *MyFileSystem) Info(path string) {
 	})
 }
 
-func (fs *MyFileSystem) RemoveDirectory(path string) {
+func (fs *MyFileSystem) Remove(path string) {
+	if fs.RemoveAtPath(path) {
+		utils.PrintSuccess("OK")
+	} else {
+		utils.PrintError(fmt.Sprintf("ITEM AT '%s' NOT FOUND", path))
+	}
+}
+func (fs *MyFileSystem) RemoveAtPath(path string) bool {
 	tgtName := GetTargetName(path)
+	result := false
 	fs.VisitDirectoryByPathAndExecute(path, func() {
 		if fs.RemoveDirItem(tgtName, fs.currentInodeID, true) {
-			utils.PrintSuccess("OK")
-		} else {
-			utils.PrintError(fmt.Sprintf("'%s' not found", path))
+			result = true
 		}
 	}, func() {
-		utils.PrintError(fmt.Sprintf("'%s' not found", path))
 	})
+	return result
 }

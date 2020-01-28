@@ -18,5 +18,5 @@ type FileSystem interface {
 	CopyIn(src string, dst string)
 	CopyOut(src string, dst string)
 	Move(src string, dst string)
-	RemoveDirectory(path string)
+	Remove(path string)
 }

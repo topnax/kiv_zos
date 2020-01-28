@@ -74,7 +74,7 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 	case mvCommand.FullCommand():
 		fs.Move(*mvSrc, *mvDst)
 	case rmCommand.FullCommand():
-		fs.RemoveDirectory(*rmTarget)
+		fs.Remove(*rmTarget)
 	case pwdCommand.FullCommand():
 		fs.PrintCurrentPath()
 	case mkdirCommand.FullCommand():
@@ -88,7 +88,7 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 	case checkCommand.FullCommand():
 		fs.ConsistencyCheck()
 	case rmDirCommand.FullCommand():
-		fs.RemoveDirectory(*rmDirTarget)
+		fs.Remove(*rmDirTarget)
 	case cpCommand.FullCommand():
 		fs.Copy(*cpSrc, *cpDst)
 	case inCpCommand.FullCommand():

@@ -1,27 +1,59 @@
 package myfilesystem
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"kiv_zos/utils"
+	"unsafe"
 )
 
 func (fs *MyFileSystem) ConsistencyCheck() {
 	fs.CheckThatAllFilesBelongToADirectory()
+	fs.CheckThatFilesAreCorrectlyAllocated()
+}
+func (fs *MyFileSystem) CheckThatFilesAreCorrectlyAllocated() {
+	foundFiles := NewDirItemSet()
+	fs.AddAllFiles(foundFiles, 0)
+	addressesPerCluster := ClusterSize / Size(unsafe.Sizeof(Address(0)))
+
+	// directly pointed clusters
+	count := Size(5)
+
+	// first indirect cluster
+	count += addressesPerCluster
+
+	// second indirect cluster
+	count += addressesPerCluster * addressesPerCluster
+
+	//utils.PrintHighlight(fmt.Sprintf("Hypothetical maximal file size: %d", count*ClusterSize))
+
+	for id := range foundFiles.List {
+		node := fs.GetInodeAt(id)
+
+		i := 0
+		for ; i < int(count); i++ {
+			if fs.GetClusterAddressByIndex(node, i) < 1 {
+				break
+			}
+		}
+
+		if GetUsedClusterCount(node.FileSize) != Size(i) {
+			utils.PrintError(fmt.Sprintf("INODE %d HAS DIFFERENT AMOUNT OF ALLOCATED CLUSTERS THAN STATED IN THE HEADER", id))
+			return
+		}
+	}
+	utils.PrintSuccess("OK - EACH INODE HAS CORRECT AMOUNT OF ALLOCATED CLUSTERS")
 }
 
 func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
-	foundFiles := NewIDSet()
-	fs.VisitDirectoryByPathAndExecute("/", func() {
-		fs.AddAllFiles(foundFiles, 0)
-	}, func() {
+	foundFiles := NewDirItemSet()
 
-	})
+	if !fs.AddAllFiles(foundFiles, 0) {
+		utils.PrintError("FOUND AT LEAST TWO DIRECTORY ITEMS THAT POINT TO THE SAME INODE")
+		return
+	}
 
 	ids := fs.FindFreeBitsInBitmap(int(fs.SuperBlock.InodeCount()), fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize(), fs.SuperBlock.InodeCount())
-
-	//logrus.Warnf("%d - %d - %d", len(ids), len(foundFiles.List)+1, fs.SuperBlock.InodeCount())
-	//logrus.Warnf("%v ", fs.GetInBitmap(0, fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize()))
-	//logrus.Warnf("%v ", fs.GetInBitmap(1, fs.SuperBlock.InodeBitmapStartAddress, fs.SuperBlock.InodeBitmapSize()))
 
 	if len(ids)+len(foundFiles.List)+1 != +int(fs.SuperBlock.InodeCount()) {
 		logrus.Errorf("%d total found nodes, but %d found used in the bitmap.", len(foundFiles.List)+1, len(ids))
@@ -31,14 +63,19 @@ func (fs *MyFileSystem) CheckThatAllFilesBelongToADirectory() {
 	}
 }
 
-func (fs *MyFileSystem) AddAllFiles(foundFiles *IDSet, nodeID ID) {
+// returns false when a duplicate node is found
+func (fs *MyFileSystem) AddAllFiles(foundFiles *IDSet, nodeID ID) bool {
 	items := fs.ReadDirItems(nodeID)
 	for index, item := range items {
 		if index > 1 {
 			if fs.GetInodeAt(item.NodeID).IsDirectory {
 				fs.AddAllFiles(foundFiles, item.NodeID)
 			}
-			foundFiles.Add(item)
+			if foundFiles.Has(item.NodeID) {
+				return false
+			}
+			foundFiles.Add(item.NodeID)
 		}
 	}
+	return true
 }
