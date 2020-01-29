@@ -64,7 +64,7 @@ func Format(fs filesystem.FileSystem, size string) {
 func parseArgs(args []string, fs filesystem.FileSystem) {
 	parseResult := kingpin.MustParse(fsApp.Parse(args))
 
-	if parseResult != formatCommand.FullCommand() && !fs.IsLoaded() {
+	if (parseResult != formatCommand.FullCommand() && parseResult != exitCommand.FullCommand()) && !fs.IsLoaded() {
 		log.Warnln("Filesystem not formatted. Use format command first please")
 		return
 	}
@@ -104,7 +104,7 @@ func parseArgs(args []string, fs filesystem.FileSystem) {
 	case exitCommand.FullCommand():
 		exit(fs)
 	default:
-		fmt.Println("Unknown command... Try --help")
+		//fmt.Println("Unknown command... Try --help")
 	}
 }
 
@@ -126,6 +126,6 @@ func loadCommands(path string, fs filesystem.FileSystem) {
 
 func exit(fs filesystem.FileSystem) {
 	fs.Close()
-	fmt.Println("Exitting... :)")
+	utils.PrintHighlight("Exitting... :)")
 	os.Exit(0)
 }

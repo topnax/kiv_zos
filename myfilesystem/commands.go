@@ -96,7 +96,7 @@ func (fs *MyFileSystem) Move(src string, dst string) {
 			// cd to destination
 			fs.VisitDirectoryByPathAndExecute(dst, func() {
 				dstTarget := GetTargetName(dst)
-				if strings.Trim(dstTarget, " ") == "" {
+				if strings.Trim(dstTarget, " ") == "" || dstTarget == "." {
 					dstTarget = srcTarget
 				}
 				if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID != -1 {
@@ -276,7 +276,9 @@ func (fs *MyFileSystem) CreateNewDirectory(name string) {
 
 	// cd into the target path
 	fs.VisitDirectoryByPathAndExecute(name, func() {
-		fs.NewDirectory(fs.currentInodeID, tgtName, false)
+		if fs.NewDirectory(fs.currentInodeID, tgtName, false) != -1 {
+			utils.PrintSuccess("OK")
+		}
 	}, func() {
 		utils.PrintError(fmt.Sprintf("Cannot create folder '%s' at '/%s/' because such path does not exist", tgtName, name))
 	})

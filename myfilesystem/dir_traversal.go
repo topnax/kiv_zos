@@ -75,5 +75,13 @@ func GetDirNames(path string) []string {
 		dirs[0] = "/"
 	}
 
+	if path[0] == '.' {
+		dirs[0] = "."
+	}
+
+	if path == ".." {
+		dirs[0] = ".."
+	}
+
 	return dirs
 }
