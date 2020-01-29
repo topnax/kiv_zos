@@ -22,7 +22,7 @@ func (fs *MyFileSystem) Copy(src string, dst string) {
 			fs.VisitDirectoryByPathAndExecute(dst, func() {
 				// cd into the destination directory
 				dstTarget := GetTargetName(dst)
-				if strings.Trim(dstTarget, " ") == "" {
+				if strings.Trim(dstTarget, " ") == "" || dstTarget == "." {
 					dstTarget = srcTarget
 				}
 				if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID != -1 {
@@ -165,8 +165,15 @@ func (fs *MyFileSystem) CopyOut(src string, dst string) {
 func (fs *MyFileSystem) CopyIn(src string, dst string) {
 	// cd into the destination directory
 	fs.VisitDirectoryByPathAndExecute(dst, func() {
+
+		srcTarget := GetTargetName(src)
+		dstTarget := GetTargetName(dst)
+		if strings.Trim(dstTarget, " ") == "" || dstTarget == "." {
+			dstTarget = srcTarget
+		}
+
 		// check whether destination file does not exist
-		if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), GetTargetName(dst)).NodeID == -1 {
+		if fs.FindDirItemByName(fs.ReadDirItems(fs.currentInodeID), dstTarget).NodeID == -1 {
 			file, err := os.Open(src)
 			if err == nil {
 				first := true
@@ -212,15 +219,11 @@ func (fs *MyFileSystem) CopyIn(src string, dst string) {
 				if !first {
 					fs.SetInodeAt(id, node)
 					//utils.PrintSuccess(fmt.Sprintf("Successfully copied a file of length %d bytes (%d kB)", node.FileSize, node.FileSize/1024))
-					utils.PrintSuccess("OK")
-					name := GetTargetName(dst)
-					if strings.Trim(name, " ") == "" {
-						name = GetTargetName(src)
-					}
 					fs.AddDirItem(DirectoryItem{
 						NodeID: id,
-						Name:   NameToDirName(GetTargetName(name)),
+						Name:   NameToDirName(dstTarget),
 					}, fs.currentInodeID)
+					utils.PrintSuccess("OK")
 				}
 			} else {
 				utils.PrintError("FILE NOT FOUND")

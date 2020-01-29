@@ -24,6 +24,7 @@ func Main(args []string, fs filesystem.FileSystem) {
 		log.Infof("File path set to '%s'", args[0])
 		if fs.Load() {
 			log.Infoln("Filesystem correctly loaded")
+			utils.PrintSuccess(fmt.Sprintf("FILESYSTEM AT '%s' LOADED", args[0]))
 		} else {
 			log.Infoln("Filesystem not loaded, please format first.")
 		}
